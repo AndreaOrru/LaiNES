@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include "cpu.hpp"
 
-
 u8 mem[0x10000];
 u8 A, X, Y, S;
 u16 PC;
@@ -11,7 +10,7 @@ Flags P;
 u64 clock;
 #define T  clock++
 
-inline bool cross(u16 a, u8 i)        { return ((a+i) & 0xFF00) != ((a & 0xFF00)); }
+inline bool cross(u16 a, u8 i)        { return ((a+i) & 0xFF00) != ((a & 0xFF00));   }
 inline void upd_cv(u8 x, u8 y, s16 r) { P.c = (r>0xFF); P.v = ~(x^y) & (x^r) & 0x80; }
 inline void upd_nz(u8 x)              { P.n = x & 0x80; P.z = (x == 0);              }
 
@@ -169,7 +168,7 @@ void step()
 void reset()
 {
     A = X = Y = 0x00;
-    P.reg = 0b00100100;
+    P.reg = 0b00110100;
     PC = 0xC000;
     S = 0xFD;
 }
