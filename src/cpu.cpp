@@ -207,13 +207,15 @@ int main(int argc, char const *argv[])
     fread(mem + 0xC000, 0x4000, 1, f);
 
     /* Emulate forever */
-    u64 old_clock = 0;
+    u64 old_cycles = 0;
     while(1)
     {
-        printf("[PC: $%.4x] - | A: $%.2x | X: $%.2x | Y: $%.2x | P: $%.2x | S: $%.2x | CYC: %lu\n", PC, A, X, Y, P.reg, S, (clock - old_clock) * 3);
+        printf("[PC: $%.4x] - | A: $%.2x | X: $%.2x | Y: $%.2x | P: $%.2x | S: $%.2x | CYC: %lu\n",
+                 PC,            A,         X,         Y,         P.reg,     S,         (cycles - old_cycles) * 3);
+
         fflush(stdout);
         
-        old_clock = clock;
+        old_cycles = cycles;
         step();
     }
 
