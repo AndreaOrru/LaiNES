@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include "cpu.hpp"
 
+namespace CPU {
+
 /* CPU state */
 u8 mem[0x10000];
 u8 A, X, Y, S;
@@ -194,29 +196,31 @@ void reset()
     S = 0xFD;
 }
 
+}
+
 /* Entry point */
 int main(int argc, char const *argv[])
 {
-    reset();  // Set the initial state.
+    CPU::reset();  // Set the initial state.
 
     /* Read the ROM */
     FILE* f = fopen(argv[1], "rb");
     fseek(f, 0, SEEK_END);
     int s = ftell(f);
     fseek(f, 16, SEEK_SET);
-    fread(mem + 0xC000, 0x4000, 1, f);
+    fread(CPU::mem + 0xC000, 0x4000, 1, f);
 
     /* Emulate forever */
     u64 old_cycles = 0;
     while(1)
     {
         printf("[PC: $%.4x] - | A: $%.2x | X: $%.2x | Y: $%.2x | P: $%.2x | S: $%.2x | CYC: %lu\n",
-                 PC,            A,         X,         Y,         P.reg,     S,         (cycles - old_cycles) * 3);
+                CPU::PC,       CPU::A,    CPU::X,    CPU::Y,    CPU::P.reg, CPU::S,   (CPU::cycles - old_cycles) * 3);
 
         fflush(stdout);
         
-        old_cycles = cycles;
-        step();
+        old_cycles = CPU::cycles;
+        CPU::step();
     }
 
 

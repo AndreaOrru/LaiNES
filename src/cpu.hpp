@@ -2,6 +2,7 @@
 
 #ifndef CPU_HPP
 #define CPU_HPP
+namespace CPU {
 
 
 /* Processor flags */
@@ -29,4 +30,5 @@ union Flags
 typedef u16 (*Mode)(void);
 
 
+}
 #endif  // CPU_HPP
