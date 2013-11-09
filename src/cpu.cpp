@@ -34,14 +34,14 @@ inline u16 imm()   { return PC++;                                          }
 inline u16 imm16() { PC += 2; return PC - 2;                               }
 inline u16 abs()   { return rd16(imm16());                                 }
 inline u16 _abx()  { T; return abs() + X;                                  }  // Exception.
-inline u16 abx()   { if (cross(a, X)) { T; }; u16 a = abs(); return a + X; }
-inline u16 aby()   { if (cross(a, Y)) { T; }; u16 a = abs(); return a + Y; }
+inline u16 abx()   { u16 a = abs(); if (cross(a, X)) { T; }; return a + X; }
+inline u16 aby()   { u16 a = abs(); if (cross(a, Y)) { T; }; return a + Y; }
 inline u16 zp()    { return rd(imm());                                     }
 inline u16 zpx()   { T; return (zp() + X) % 0x100;                         }
 inline u16 zpy()   { T; return (zp() + Y) % 0x100;                         }
 inline u16 izx()   { u8 i = zpx(); return rd16_d(i, (i+1) % 0x100);        }
 inline u16 _izy()  { u8 i = zp();  return rd16_d(i, (i+1) % 0x100) + Y;    }  // Exception.
-inline u16 izy()   { if (cross(a-Y, Y)) { T; }; u16 a = _izy(); return a;  }
+inline u16 izy()   { u16 a = _izy(); if (cross(a-Y, Y)) { T; }; return a;  }
 
 /* STx */
 template<u8& r, Mode m> void st()        {    wr(   m()    , r); }
