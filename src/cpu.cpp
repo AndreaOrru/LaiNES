@@ -34,20 +34,20 @@ inline u16 imm()   { return PC++;                                          }
 inline u16 imm16() { PC += 2; return PC - 2;                               }
 inline u16 abs()   { return rd16(imm16());                                 }
 inline u16 _abx()  { T; return abs() + X;                                  }  // Exception.
-inline u16 abx()   { u16 a = abs(); if (cross(a, X)) { T; }; return a + X; }
-inline u16 aby()   { u16 a = abs(); if (cross(a, Y)) { T; }; return a + Y; }
+inline u16 abx()   { if (cross(a, X)) { T; }; u16 a = abs(); return a + X; }
+inline u16 aby()   { if (cross(a, Y)) { T; }; u16 a = abs(); return a + Y; }
 inline u16 zp()    { return rd(imm());                                     }
 inline u16 zpx()   { T; return (zp() + X) % 0x100;                         }
 inline u16 zpy()   { T; return (zp() + Y) % 0x100;                         }
 inline u16 izx()   { u8 i = zpx(); return rd16_d(i, (i+1) % 0x100);        }
 inline u16 _izy()  { u8 i = zp();  return rd16_d(i, (i+1) % 0x100) + Y;    }  // Exception.
-inline u16 izy()   { u16 a = _izy(); if (cross(a-Y, Y)) { T; }; return a;  }
+inline u16 izy()   { if (cross(a-Y, Y)) { T; }; u16 a = _izy(); return a;  }
 
 /* STx */
-template<u8& r, Mode m> void st()        { wr(   m()    , r);    }
-template<>              void st<A,izy>() { wr(_izy()    , A); T; }  // Exceptions.
-template<>              void st<A,abx>() { wr( abs() + X, A); T; }  // ...
-template<>              void st<A,aby>() { wr( abs() + Y, A); T; }  // ...
+template<u8& r, Mode m> void st()        {    wr(   m()    , r); }
+template<>              void st<A,izy>() { T; wr(_izy()    , A); }  // Exceptions.
+template<>              void st<A,abx>() { T; wr( abs() + X, A); }  // ...
+template<>              void st<A,aby>() { T; wr( abs() + Y, A); }  // ...
 
 #define G  u16 a = m(); u8 p = rd(a)  /* Fetch parameter */
 template<u8& r, Mode m> void ld()  { G; upd_nz(r = p);                 }  // LDx
@@ -60,12 +60,12 @@ template<Mode m> void AND() { G; upd_nz(A &= p); }
 template<Mode m> void EOR() { G; upd_nz(A ^= p); }
 template<Mode m> void ORA() { G; upd_nz(A |= p); }
 /* Read-Modify-Write */
-template<Mode m> void ASL() { G; P.c = p & 0x80; upd_nz(wr(a, p << 1)); T; }
-template<Mode m> void LSR() { G; P.c = p & 0x01; upd_nz(wr(a, p >> 1)); T; }
-template<Mode m> void ROL() { G; u8 c = P.c     ; P.c = p & 0x80; upd_nz(wr(a, (p << 1) | c) ); T; }
-template<Mode m> void ROR() { G; u8 c = P.c << 7; P.c = p & 0x01; upd_nz(wr(a, c | (p >> 1)) ); T; }
-template<Mode m> void DEC() { G; upd_nz(wr(a, --p)); T; }
-template<Mode m> void INC() { G; upd_nz(wr(a, ++p)); T; }
+template<Mode m> void ASL() { G; P.c = p & 0x80; T; upd_nz(wr(a, p << 1)); }
+template<Mode m> void LSR() { G; P.c = p & 0x01; T; upd_nz(wr(a, p >> 1)); }
+template<Mode m> void ROL() { G; u8 c = P.c     ; P.c = p & 0x80; T; upd_nz(wr(a, (p << 1) | c) ); }
+template<Mode m> void ROR() { G; u8 c = P.c << 7; P.c = p & 0x01; T; upd_nz(wr(a, c | (p >> 1)) ); }
+template<Mode m> void DEC() { G; T; upd_nz(wr(a, --p)); }
+template<Mode m> void INC() { G; T; upd_nz(wr(a, ++p)); }
 #undef G
 
 /* DEx, INx */
@@ -82,20 +82,20 @@ template<u8& s, u8& d> void tr()      { upd_nz(d = s); T; }
 template<>             void tr<X,S>() { S = X;         T; }  // TSX, exception.
 
 /* Stack operations */
-void PLP() { P.reg = (pop() & 0b11001111) | (P.reg & 0b00110000); T; T; }
-void PHP() { push(P.reg | (1 << 4)); T; }
-void PLA() { A = pop(); upd_nz(A); T; T; }
-void PHA() { push(A); T; }
+void PLP() { T; T; P.reg = (pop() & 0b11001111) | (P.reg & 0b00110000); }
+void PHP() { T; push(P.reg | (1 << 4)); }
+void PLA() { T; T; A = pop(); upd_nz(A); }
+void PHA() { T; push(A); }
 
 /* Flow control (branches, jumps) */
-template<u8 f, bool v> void br() { s8 j = rd(imm()); if (P.get(f) == v) { PC += j; T; } }
+template<u8 f, bool v> void br() { s8 j = rd(imm()); if (P.get(f) == v) { T; PC += j; } }
 void JMP_IND() { u16 i = rd16(imm16()); PC = rd16_d(i, (i&0xFF00) | ((i+1) % 0x100)); }
 void JMP()     { PC = rd16(imm16()); }
 void JSR()     { u16 t = PC+1; T; push(t >> 8); push(t); PC = rd16(imm16()); }
 
 /* Return instructions */
-void RTS() {        PC = (pop() | (pop() << 8)) + 1; T; T; T; }
-void RTI() { PLP(); PC =  pop() | (pop() << 8);               }
+void RTS() { T; T;  PC = (pop() | (pop() << 8)) + 1; T; }
+void RTI() { PLP(); PC =  pop() | (pop() << 8);         }
 
 template<u8 f, bool v> void flag() { P.set(f, v); T; }  // Clear and set flags.
 void NOP() { T;       }
