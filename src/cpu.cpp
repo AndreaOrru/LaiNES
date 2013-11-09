@@ -2,52 +2,62 @@
 #include <cstdlib>
 #include "cpu.hpp"
 
+/* CPU state */
 u8 mem[0x10000];
 u8 A, X, Y, S;
 u16 PC;
 Flags P;
 
-u64 clock;
-#define T  clock++
+/* Cycle counting */
+u64 cycles;
+#define T   tick()
+inline void tick() { cycles++; }
 
-inline bool cross(u16 a, u8 i)        { return ((a+i) & 0xFF00) != ((a & 0xFF00));   }
+/* Flags updating */
 inline void upd_cv(u8 x, u8 y, s16 r) { P.c = (r>0xFF); P.v = ~(x^y) & (x^r) & 0x80; }
 inline void upd_nz(u8 x)              { P.n = x & 0x80; P.z = (x == 0);              }
+// Does adding I to A cross a page?
+inline bool cross(u16 a, u8 i) { return ((a+i) & 0xFF00) != ((a & 0xFF00)); }
 
+/* Memory access */
 inline u8  wr(u16 a, u8 v)      { T; return mem[a] = v;        }
 inline u8  rd(u16 a)            { T; return mem[a];            }
-inline u16 rd16_d(u16 a, u16 b) { return rd(a) | (rd(b) << 8); } 
+inline u16 rd16_d(u16 a, u16 b) { return rd(a) | (rd(b) << 8); }  // Read from A and B and merge.
 inline u16 rd16(u16 a)          { return rd16_d(a, a+1);       }
 inline u8  push(u8 v)           { return wr(0x100 | (S--), v); }
 inline u8  pop()                { return rd(0x100 | (++S));    }
 
+/* Addressing modes */
 inline u16 imm()   { return PC++;                                          }
 inline u16 imm16() { PC += 2; return PC - 2;                               }
 inline u16 abs()   { return rd16(imm16());                                 }
-inline u16 _abx()  { T; return abs() + X;                                  }
+inline u16 _abx()  { T; return abs() + X;                                  }  // Exception.
 inline u16 abx()   { u16 a = abs(); if (cross(a, X)) { T; }; return a + X; }
 inline u16 aby()   { u16 a = abs(); if (cross(a, Y)) { T; }; return a + Y; }
 inline u16 zp()    { return rd(imm());                                     }
 inline u16 zpx()   { T; return (zp() + X) % 0x100;                         }
 inline u16 zpy()   { T; return (zp() + Y) % 0x100;                         }
 inline u16 izx()   { u8 i = zpx(); return rd16_d(i, (i+1) % 0x100);        }
-inline u16 _izy()  { u8 i = zp();  return rd16_d(i, (i+1) % 0x100) + Y;    }
+inline u16 _izy()  { u8 i = zp();  return rd16_d(i, (i+1) % 0x100) + Y;    }  // Exception.
 inline u16 izy()   { u16 a = _izy(); if (cross(a-Y, Y)) { T; }; return a;  }
 
+/* STx */
 template<u8& r, Mode m> void st()        { wr(   m()    , r);    }
-template<>              void st<A,izy>() { wr(_izy()    , A); T; }
-template<>              void st<A,abx>() { wr( abs() + X, A); T; }
-template<>              void st<A,aby>() { wr( abs() + Y, A); T; }
+template<>              void st<A,izy>() { wr(_izy()    , A); T; }  // Exceptions.
+template<>              void st<A,abx>() { wr( abs() + X, A); T; }  // ...
+template<>              void st<A,aby>() { wr( abs() + Y, A); T; }  // ...
 
-#define G  u16 a = m(); u8 p = rd(a)
-template<u8& r, Mode m> void ld()  { G; upd_nz(r = p); }
-template<u8& r, Mode m> void cmp() { G; upd_nz(r - p); P.c = (r >= p); }
+#define G  u16 a = m(); u8 p = rd(a)  /* Fetch parameter */
+template<u8& r, Mode m> void ld()  { G; upd_nz(r = p);                 }  // LDx
+template<u8& r, Mode m> void cmp() { G; upd_nz(r - p); P.c = (r >= p); }  // CMP, CPx
+/* Arithmetic and bitwise */
 template<Mode m> void ADC() { G       ; s16 r = A + p + P.c; upd_cv(A, p, r); upd_nz(A = r); }
 template<Mode m> void SBC() { G ^ 0xFF; s16 r = A + p + P.c; upd_cv(A, p, r); upd_nz(A = r); }
 template<Mode m> void BIT() { G; P.z = !(A & p); P.n = p & 0x80; P.v = p & 0x40; }
 template<Mode m> void AND() { G; upd_nz(A &= p); }
 template<Mode m> void EOR() { G; upd_nz(A ^= p); }
 template<Mode m> void ORA() { G; upd_nz(A |= p); }
+/* Read-Modify-Write */
 template<Mode m> void ASL() { G; P.c = p & 0x80; upd_nz(wr(a, p << 1)); T; }
 template<Mode m> void LSR() { G; P.c = p & 0x01; upd_nz(wr(a, p >> 1)); T; }
 template<Mode m> void ROL() { G; u8 c = P.c     ; P.c = p & 0x80; upd_nz(wr(a, (p << 1) | c) ); T; }
@@ -56,36 +66,46 @@ template<Mode m> void DEC() { G; upd_nz(wr(a, --p)); T; }
 template<Mode m> void INC() { G; upd_nz(wr(a, ++p)); T; }
 #undef G
 
+/* DEx, INx */
 template<u8& r> void dec() { upd_nz(--r); T; }
 template<u8& r> void inc() { upd_nz(++r); T; }
+/* Bit shifting on the accumulator */
 void ASL_A() { P.c = A & 0x80; upd_nz(A <<= 1); T; }
 void LSR_A() { P.c = A & 0x01; upd_nz(A >>= 1); T; }
 void ROL_A() { u8 c = P.c     ; P.c = A & 0x80; upd_nz(A = ((A << 1) | c) ); T; }
 void ROR_A() { u8 c = P.c << 7; P.c = A & 0x01; upd_nz(A = (c | (A >> 1)) ); T; }
 
+/* Txx (move values between registers) */
 template<u8& s, u8& d> void tr()      { upd_nz(d = s); T; }
-template<>             void tr<X,S>() { S = X;         T; }
+template<>             void tr<X,S>() { S = X;         T; }  // TSX, exception.
 
+/* Stack operations */
 void PLP() { P.reg = (pop() & 0b11001111) | (P.reg & 0b00110000); T; T; }
 void PHP() { push(P.reg | (1 << 4)); T; }
 void PLA() { A = pop(); upd_nz(A); T; T; }
 void PHA() { push(A); T; }
 
-void NOP() { T; }
-void BRK() { exit(0); }
-void RTI() { PLP(); PC =  pop() | (pop() << 8);               }
-void RTS() {        PC = (pop() | (pop() << 8)) + 1; T; T; T; }
-
-template<u8 f, bool v> void flag() { P.set(f, v); T; }
+/* Flow control (branches, jumps) */
 template<u8 f, bool v> void br() { s8 j = rd(imm()); if (P.get(f) == v) { PC += j; T; } }
 void JMP_IND() { u16 i = rd16(imm16()); PC = rd16_d(i, (i&0xFF00) | ((i+1) % 0x100)); }
 void JMP()     { PC = rd16(imm16()); }
 void JSR()     { u16 t = PC+1; T; push(t >> 8); push(t); PC = rd16(imm16()); }
 
+/* Return instructions */
+void RTS() {        PC = (pop() | (pop() << 8)) + 1; T; T; T; }
+void RTI() { PLP(); PC =  pop() | (pop() << 8);               }
+
+template<u8 f, bool v> void flag() { P.set(f, v); T; }  // Clear and set flags.
+void NOP() { T;       }
+void BRK() { exit(0); }
+
+
+/* Execute a CPU instruction */
 void step() 
 {
-    switch (rd(PC++))
+    switch (rd(PC++))  // Fetch the opcode.
     {
+        // Select the right function to emulate the instruction:
         case 0x00: return BRK()       ;  case 0x01: return ORA<izx>()  ;
         case 0x05: return ORA<zp>()   ;  case 0x06: return ASL<zp>()   ;
         case 0x08: return PHP()       ;  case 0x09: return ORA<imm>()  ;
@@ -165,6 +185,7 @@ void step()
     }
 }
 
+/* Reset the CPU */
 void reset()
 {
     A = X = Y = 0x00;
@@ -173,16 +194,19 @@ void reset()
     S = 0xFD;
 }
 
+/* Entry point */
 int main(int argc, char const *argv[])
 {
-    reset();
+    reset();  // Set the initial state.
 
+    /* Read the ROM */
     FILE* f = fopen(argv[1], "rb");
     fseek(f, 0, SEEK_END);
     int s = ftell(f);
     fseek(f, 16, SEEK_SET);
     fread(mem + 0xC000, 0x4000, 1, f);
 
+    /* Emulate forever */
     u64 old_clock = 0;
     while(1)
     {
@@ -192,6 +216,7 @@ int main(int argc, char const *argv[])
         old_clock = clock;
         step();
     }
+
 
     return 0;
 }
