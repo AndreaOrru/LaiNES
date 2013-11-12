@@ -199,9 +199,9 @@ void step()
 /* Reset the CPU */
 void reset()
 {
+    PC = Cartridge::access<0>(0xFFFC) | (Cartridge::access<0>(0xFFFD) << 8);
     A = X = Y = 0x00;
     P.reg = 0b00110100;
-    PC = Cartridge::access<0>(0xFFFC) | (Cartridge::access<0>(0xFFFD) << 8);
     S = 0xFD;
 }
 
