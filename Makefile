@@ -7,7 +7,7 @@ OBJ = $(patsubst %.cpp, %.o, $(SRC))
 .PHONY: check-syntax clean
 
 laines: $(OBJ)
-	$(CXX) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 check-syntax:
 	$(CXX) $(CXXFLAGS) -o /dev/null -S ${CHK_SOURCES}

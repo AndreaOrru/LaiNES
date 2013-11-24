@@ -112,7 +112,7 @@ void BRK() { exit(0); }
 
 
 /* Execute a CPU instruction */
-void step() 
+void step()
 {
     switch (rd(PC++))  // Fetch the opcode.
     {
@@ -162,7 +162,7 @@ void step()
         case 0x95: return st<A,zpx>() ;  case 0x96: return st<X,zpy>() ;
         case 0x98: return tr<Y,A>()   ;  case 0x99: return st<A,aby>() ;
         case 0x9A: return tr<X,S>()   ;  case 0x9D: return st<A,abx>() ;
-        case 0xA0: return ld<Y,imm>() ;  case 0xA1: return ld<A,izx>() ; 
+        case 0xA0: return ld<Y,imm>() ;  case 0xA1: return ld<A,izx>() ;
         case 0xA2: return ld<X,imm>() ;  case 0xA4: return ld<Y,zp>()  ;
         case 0xA5: return ld<A,zp>()  ;  case 0xA6: return ld<X,zp>()  ;
         case 0xA8: return tr<A,Y>()   ;  case 0xA9: return ld<A,imm>() ;
@@ -222,7 +222,7 @@ int main(int argc, char const *argv[])
                 CPU::PC,       CPU::A,    CPU::X,    CPU::Y,    CPU::P.reg, CPU::S,   (CPU::cycles - old_cycles) * 3);
 
         fflush(stdout);
-        
+
         old_cycles = CPU::cycles;
         CPU::step();
     }
