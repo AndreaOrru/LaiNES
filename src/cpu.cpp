@@ -12,10 +12,9 @@ u8 A, X, Y, S;
 u16 PC;
 Flags P;
 
-/* Cycle counting */
-u64 cycles;
+/* Cycle emulation */
 #define T   tick()
-inline void tick() { cycles++; }
+inline void tick() { return; }
 
 /* Flags updating */
 inline void upd_cv(u8 x, u8 y, s16 r) { P.c = (r>0xFF); P.v = ~(x^y) & (x^r) & 0x80; }
@@ -215,15 +214,13 @@ int main(int argc, char const *argv[])
     CPU::reset();             // Set the initial state.
 
     /* Emulate forever */
-    u64 old_cycles = 0;
     while(1)
     {
-        printf("[PC: $%.4x] - | A: $%.2x | X: $%.2x | Y: $%.2x | P: $%.2x | S: $%.2x | CYC: %lu\n",
-                CPU::PC,       CPU::A,    CPU::X,    CPU::Y,    CPU::P.reg, CPU::S,   (CPU::cycles - old_cycles) * 3);
+        printf("[PC: $%.4x] - | A: $%.2x | X: $%.2x | Y: $%.2x | P: $%.2x | S: $%.2x\n",
+                CPU::PC,       CPU::A,    CPU::X,    CPU::Y,    CPU::P.reg, CPU::S);
 
         fflush(stdout);
 
-        old_cycles = CPU::cycles;
         CPU::step();
     }
 
