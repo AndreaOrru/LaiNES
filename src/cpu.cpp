@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "cartridge.hpp"
+#include "ppu.hpp"
 #include "cpu.hpp"
 
 namespace CPU {
@@ -14,7 +15,7 @@ Flags P;
 
 /* Cycle emulation */
 #define T   tick()
-inline void tick() { return; }
+inline void tick() { PPU::step(); PPU::step(); PPU::step(); }
 
 /* Flags updating */
 inline void upd_cv(u8 x, u8 y, s16 r) { P.c = (r>0xFF); P.v = ~(x^y) & (x^r) & 0x80; }
@@ -27,6 +28,7 @@ template <bool wr> inline u8 access(u16 addr, u8 v = 0)
 {
     T; u8* r;
     if      (addr < 0x2000) { r = &RAM[addr % 0x800]; if (wr) *r = v; return *r; }  // RAM.
+    else if (addr < 0x4000) { return PPU::access<wr>(addr % 8, v); }                // PPU.
     else if (addr < 0x8000) { return 0; }
     else                    { return Cartridge::access<wr>(addr, v); }              // ROM.
 }

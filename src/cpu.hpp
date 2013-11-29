@@ -11,14 +11,14 @@ union Flags
 {
     struct
     {
-        bool c : 1;
-        bool z : 1;
-        bool i : 1;
-        bool d : 1;
+        bool c : 1;      // Carry.
+        bool z : 1;      // Zero.
+        bool i : 1;      // Interrupt priority.
+        bool d : 1;      // Decimal (useless).
         bool b : 1;
         bool unused : 1;
-        bool v : 1;
-        bool n : 1;
+        bool v : 1;      // Overflow.
+        bool n : 1;      // Negative.
     };
     u8 reg;
 

@@ -5,8 +5,8 @@ namespace Cartridge {
 
 
 int banksMap[8];  // Map virtual memory to ROM.
-u8* rom;
-u8* vRam;
+u8* rom;          // ROM data.
+u8* vRam;         // VRAM/VROM data.
 
 /* PRG-ROM access */
 template <bool wr> u8 access(u16 addr, u8 v)
@@ -19,7 +19,7 @@ template u8 access<0>(u16, u8); template u8 access<1>(u16, u8);
 /* CHR-ROM/RAM access */
 template <bool wr> u8 chr_access(u16 addr, u8 v)
 {
-    return vRam[addr];
+    return vRam[addr];  // TODO: support CHR-RAM.
 }
 template u8 chr_access<0>(u16, u8); template u8 chr_access<1>(u16, u8);
 
@@ -35,7 +35,7 @@ void load(const char* fname)
 
     // Read PRG-ROM and CHR-ROM:
     rom = new u8[0x4000 * prgRom_16k];
-    vRam = new u8[0x2000 * chrRom_8k];
+    vRam = new u8[0x2000 * chrRom_8k];  // TODO: CHR-RAM.
     fread( rom, 0x4000, prgRom_16k, f);
     fread(vRam, 0x2000, chrRom_8k , f);
 
