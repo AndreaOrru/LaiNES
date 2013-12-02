@@ -66,10 +66,11 @@ union Addr
         unsigned l : 8;
         unsigned h : 7;
     };
-    unsigned addr : 12;   // Address part.
+    unsigned addr : 14;
     unsigned r : 15;
 };
 
+void init();
 void step();
 template <bool write> u8 access(u16 index, u8 v = 0);
 

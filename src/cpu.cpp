@@ -12,6 +12,7 @@ u8 RAM[0x800];
 u8 A, X, Y, S;
 u16 PC;
 Flags P;
+bool nmi;
 
 /* Cycle emulation */
 #define T   tick()
@@ -206,6 +207,17 @@ void reset()
     S = 0xFD;
 }
 
+void set_nmi() { nmi = true; }
+void handle_nmi()
+{
+    T; T;
+    push(PC >> 8);
+    push(PC & 0xFF);
+    push(P.reg);
+    PC = Cartridge::access<0>(0xFFFA) | (Cartridge::access<0>(0xFFFB) << 8);
+    nmi = false;
+}
+
 
 }
 
@@ -214,16 +226,19 @@ int main(int argc, char const *argv[])
 {
     Cartridge::load(argv[1]); // Load the ROM.
     CPU::reset();             // Set the initial state.
+    PPU::init();
 
     /* Emulate forever */
     while(1)
     {
-        printf("[PC: $%.4x] - | A: $%.2x | X: $%.2x | Y: $%.2x | P: $%.2x | S: $%.2x\n",
+        /*printf("[PC: $%.4x] - | A: $%.2x | X: $%.2x | Y: $%.2x | P: $%.2x | S: $%.2x\n",
                 CPU::PC,       CPU::A,    CPU::X,    CPU::Y,    CPU::P.reg, CPU::S);
 
-        fflush(stdout);
+        fflush(stdout);*/
 
         CPU::step();
+
+        if (CPU::nmi) CPU::handle_nmi();
     }
 
 

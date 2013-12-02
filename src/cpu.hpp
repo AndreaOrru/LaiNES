@@ -5,6 +5,9 @@
 namespace CPU {
 
 
+// Addressing mode:
+typedef u16 (*Mode)(void);
+
 /* Processor flags */
 enum {C, Z, I, D, B, UNUSED, V, N};
 union Flags
@@ -26,8 +29,7 @@ union Flags
     void set(u8 i, bool v) { reg = v ? (reg | (1 << i)) : (reg & ~(1 << i)); }
 };
 
-// Addressing mode:
-typedef u16 (*Mode)(void);
+void set_nmi();
 
 
 }

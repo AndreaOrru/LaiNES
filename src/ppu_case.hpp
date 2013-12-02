@@ -6,13 +6,13 @@
     case   1: case   9: case  17: case  25: case  33: case  41: case  49: case  57: case  65: \
     case  73: case  81: case  89: case  97: case 105: case 113: case 121: case 129: case 137: \
     case 145: case 153: case 161: case 169: case 177: case 185: case 193: case 201: case 209: \
-    case 217: case 225: case 233: case 241: case 249: case 321: case 329: case 337: case 339
+    case 217: case 225: case 233: case 241: case 249: case 321: case 329
 
 #define TILE_PHASE_2 \
     case   2: case  10: case  18: case  26: case  34: case  42: case  50: case  58: case  66: \
     case  74: case  82: case  90: case  98: case 106: case 114: case 122: case 130: case 138: \
     case 146: case 154: case 162: case 170: case 178: case 186: case 194: case 202: case 210: \
-    case 218: case 226: case 234: case 242: case 250: case 322: case 330: case 338: case 340
+    case 218: case 226: case 234: case 242: case 250: case 322: case 330
 
 #define TILE_PHASE_3 \
     case   3: case  11: case  19: case  27: case  35: case  43: case  51: case  59: case  67: \
