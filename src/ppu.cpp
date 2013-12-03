@@ -47,11 +47,11 @@ template <bool wr> u8 mem_access(u16 addr, u8 v = 0)
 {
     u8* ref;
 
-    if      (addr < 0x2000) return Cartridge::chr_access<wr>(addr, v);  // CHR-ROM/RAM.
-    else if (addr < 0x2800) ref = &ciRam[addr - 0x2000];                // Nametables.
+    if      (addr < 0x2000) return Cartridge::chr_access<wr>(addr, v);     // CHR-ROM/RAM.
+    else if (addr < 0x2800) ref = &ciRam[addr - 0x2000];                   // Nametables.
     else if (addr < 0x3000) return 0x00;
-    else if (addr < 0x3F00) ref = &ciRam[addr - 0x3000];                // Nametables (mirror).
-    else                    ref = &palette[addr % 0x20];                // Palettes.
+    else if (addr < 0x3F00) ref = &ciRam[addr - 0x3000];                   // Nametables (mirror).
+    else                    ref = &palette[(addr % 4) ? addr % 0x20 : 0];  // Palettes.
 
     if (wr) return *ref = v;
     else    return *ref;
@@ -151,7 +151,7 @@ void pixel()
     u8 palInd = (atBits << 2) | bgBits;
 
     if (scanline < 240 and cycle >= 1 and cycle <= 256)
-        ((u32*) s->pixels) [scanline * 256 + (cycle - 1)] = rendering() ? nes_rgb[palette[palInd]] : 0;
+        ((u32*) s->pixels) [scanline * 256 + (cycle - 1)] = rendering() ? nes_rgb[rd(0x3F00 | palInd)] : 0;
 
     bgShiftL <<= 1; bgShiftH <<= 1;
 }
