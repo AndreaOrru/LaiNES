@@ -30,6 +30,8 @@ union Flags
 };
 
 void set_nmi();
+void power();
+void run();
 
 
 }

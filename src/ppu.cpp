@@ -1,10 +1,9 @@
 #include <csignal>
-#include <cstdio>
 #include <SDL/SDL.h>
 #include "cartridge.hpp"
 #include "cpu.hpp"
-#include "ppu.hpp"
 #include "ppu_case.hpp"
+#include "ppu.hpp"
 
 namespace PPU {
 

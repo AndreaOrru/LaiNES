@@ -1,5 +1,5 @@
-#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include "cartridge.hpp"
 #include "ppu.hpp"
 #include "cpu.hpp"
@@ -25,13 +25,13 @@ inline void upd_nz(u8 x)              { P.n = x & 0x80; P.z = (x == 0);         
 inline bool cross(u16 a, u8 i) { return ((a+i) & 0xFF00) != ((a & 0xFF00)); }
 
 /* Memory access */
-template <bool wr> inline u8 access(u16 addr, u8 v = 0)
+template<bool wr> inline u8 access(u16 addr, u8 v = 0)
 {
     T; u8* r;
     if      (addr < 0x2000) { r = &RAM[addr % 0x800]; if (wr) *r = v; return *r; }  // RAM.
     else if (addr < 0x4000) { return PPU::access<wr>(addr % 8, v); }                // PPU.
-    else if (addr < 0x8000) { return 0; }
-    else                    { return Cartridge::access<wr>(addr, v); }              // ROM.
+    else if (addr < 0x4020) { return 0; }                                           // APU.
+    else                    { return Cartridge::access<wr>(addr, v); }              // Cartridge.
 }
 inline u8  wr(u16 a, u8 v)      { return access<1>(a, v);      }
 inline u8  rd(u16 a)            { return access<0>(a);         }
@@ -41,18 +41,18 @@ inline u8  push(u8 v)           { return wr(0x100 + (S--), v); }
 inline u8  pop()                { return rd(0x100 + (++S));    }
 
 /* Addressing modes */
-inline u16 imm()   { return PC++;                                          }
-inline u16 imm16() { PC += 2; return PC - 2;                               }
-inline u16 abs()   { return rd16(imm16());                                 }
-inline u16 _abx()  { T; return abs() + X;                                  }  // Exception.
-inline u16 abx()   { u16 a = abs(); if (cross(a, X)) { T; }; return a + X; }
-inline u16 aby()   { u16 a = abs(); if (cross(a, Y)) { T; }; return a + Y; }
-inline u16 zp()    { return rd(imm());                                     }
-inline u16 zpx()   { T; return (zp() + X) % 0x100;                         }
-inline u16 zpy()   { T; return (zp() + Y) % 0x100;                         }
-inline u16 izx()   { u8 i = zpx(); return rd16_d(i, (i+1) % 0x100);        }
-inline u16 _izy()  { u8 i = zp();  return rd16_d(i, (i+1) % 0x100) + Y;    }  // Exception.
-inline u16 izy()   { u16 a = _izy(); if (cross(a-Y, Y)) { T; }; return a;  }
+inline u16 imm()   { return PC++;                                       }
+inline u16 imm16() { PC += 2; return PC - 2;                            }
+inline u16 abs()   { return rd16(imm16());                              }
+inline u16 _abx()  { T; return abs() + X;                               }  // Exception.
+inline u16 abx()   { u16 a = abs(); if (cross(a, X)) T; return a + X;   }
+inline u16 aby()   { u16 a = abs(); if (cross(a, Y)) T; return a + Y;   }
+inline u16 zp()    { return rd(imm());                                  }
+inline u16 zpx()   { T; return (zp() + X) % 0x100;                      }
+inline u16 zpy()   { T; return (zp() + Y) % 0x100;                      }
+inline u16 izx()   { u8 i = zpx(); return rd16_d(i, (i+1) % 0x100);     }
+inline u16 _izy()  { u8 i = zp();  return rd16_d(i, (i+1) % 0x100) + Y; }  // Exception.
+inline u16 izy()   { u16 a = _izy(); if (cross(a-Y, Y)) T; return a;    }
 
 /* STx */
 template<u8& r, Mode m> void st()        {    wr(   m()    , r); }
@@ -109,12 +109,11 @@ void RTS() { T; T;  PC = (pop() | (pop() << 8)) + 1; T; }
 void RTI() { PLP(); PC =  pop() | (pop() << 8);         }
 
 template<u8 f, bool v> void flag() { P.set(f, v); T; }  // Clear and set flags.
-void NOP() { T;       }
-void BRK() { exit(0); }
-
+void NOP() { T;         }
+void BRK() { /* TODO */ }
 
 /* Execute a CPU instruction */
-void step()
+void exec()
 {
     switch (rd(PC++))  // Fetch the opcode.
     {
@@ -198,49 +197,47 @@ void step()
     }
 }
 
-/* Reset the CPU */
-void reset()
-{
-    PC = Cartridge::access<0>(0xFFFC) | (Cartridge::access<0>(0xFFFD) << 8);
-    A = X = Y = 0x00;
-    P.reg = 0b00110100;
-    S = 0xFD;
-}
-
-void set_nmi() { nmi = true; }
 void handle_nmi()
 {
     T; T;
+
     push(PC >> 8);
     push(PC & 0xFF);
     push(P.reg);
-    PC = Cartridge::access<0>(0xFFFA) | (Cartridge::access<0>(0xFFFB) << 8);
+    PC = rd16(0xFFFA);
+
     nmi = false;
 }
+void set_nmi() { nmi = true; }
 
+void reset()
+{
+    T; T; T;
 
+    S -= 3;
+    P.i = true;
+
+    PC = rd16(0xFFFC);
 }
 
-/* Entry point */
-int main(int argc, char const *argv[])
+void power()
 {
-    Cartridge::load(argv[1]); // Load the ROM.
-    CPU::reset();             // Set the initial state.
-    PPU::init();
+    P.reg = 0x34;
+    A = X = Y = S = 0x00;
+    memset(RAM, 0xFF, sizeof(RAM));
 
-    /* Emulate forever */
-    while(1)
+    reset();
+}
+
+void run()
+{
+    while (true)
     {
-        /*printf("[PC: $%.4x] - | A: $%.2x | X: $%.2x | Y: $%.2x | P: $%.2x | S: $%.2x\n",
-                CPU::PC,       CPU::A,    CPU::X,    CPU::Y,    CPU::P.reg, CPU::S);
+        exec();
 
-        fflush(stdout);*/
-
-        CPU::step();
-
-        if (CPU::nmi) CPU::handle_nmi();
+        if (nmi) handle_nmi();
     }
+}
 
 
-    return 0;
 }
