@@ -1,4 +1,4 @@
-#include "types.hpp"
+#include "common.hpp"
 
 #ifndef CPU_HPP
 #define CPU_HPP
@@ -17,7 +17,7 @@ union Flags
         bool c : 1;      // Carry.
         bool z : 1;      // Zero.
         bool i : 1;      // Interrupt priority.
-        bool d : 1;      // Decimal (useless).
+        bool d : 1;      // Decimal (unused).
         bool b : 1;
         bool unused : 1;
         bool v : 1;      // Overflow.
@@ -25,7 +25,7 @@ union Flags
     };
     u8 reg;
 
-    bool get(u8 i) { return reg & (1 << i); }
+    bool get(u8 i)         { return reg & (1 << i); }
     void set(u8 i, bool v) { reg = v ? (reg | (1 << i)) : (reg & ~(1 << i)); }
 };
 

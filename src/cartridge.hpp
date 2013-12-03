@@ -1,4 +1,4 @@
-#include "types.hpp"
+#include "common.hpp"
 
 #ifndef CARTRIDGE_HPP
 #define CARTRIDGE_HPP

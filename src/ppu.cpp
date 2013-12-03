@@ -30,6 +30,16 @@ u8 atShiftL, atShiftH; u16 bgShiftL, bgShiftH;
 int scanline, cycle;
 bool frameOdd;
 
+u32 nes_rgb[] =
+{ 0x7C7C7C, 0x0000FC, 0x0000BC, 0x4428BC, 0x940084, 0xA80020, 0xA81000, 0x881400,
+  0x503000, 0x007800, 0x006800, 0x005800, 0x004058, 0x000000, 0x000000, 0x000000,
+  0xBCBCBC, 0x0078F8, 0x0058F8, 0x6844FC, 0xD800CC, 0xE40058, 0xF83800, 0xE45C10,
+  0xAC7C00, 0x00B800, 0x00A800, 0x00A844, 0x008888, 0x000000, 0x000000, 0x000000,
+  0xF8F8F8, 0x3CBCFC, 0x6888FC, 0x9878F8, 0xF878F8, 0xF85898, 0xF87858, 0xFCA044,
+  0xF8B800, 0xB8F818, 0x58D854, 0x58F898, 0x00E8D8, 0x787878, 0x000000, 0x000000,
+  0xFCFCFC, 0xA4E4FC, 0xB8B8F8, 0xD8B8F8, 0xF8B8F8, 0xF8A4C0, 0xF0D0B0, 0xFCE0A8,
+  0xF8D878, 0xD8F878, 0xB8F8B8, 0xB8F8D8, 0x00FCFC, 0xF8D8F8, 0x000000, 0x000000 };
+
 inline bool rendering() { return mask.bg || mask.spr; }
 
 /* Access PPU memory */
@@ -125,11 +135,13 @@ inline void reload_shift()
 {
     bgShiftL = (bgShiftL & 0xFF00) | bgL;
     bgShiftH = (bgShiftH & 0xFF00) | bgH;
-    atShiftL = (atShiftL << 1)     |  (at & 1);
-    atShiftH = (atShiftH << 1)     | ((at & 2) >> 1);
+    if (!(vAddr.cX % 2))
+    {
+        atShiftL = (atShiftL << 1) |  (at & 1);
+        atShiftH = (atShiftH << 1) | ((at & 2) >> 1);
+    }
 }
 
-#define NTH_BIT(v, i) (((v) >> (i)) & 1)
 void pixel()
 {
     u8 bgBits = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
@@ -139,7 +151,7 @@ void pixel()
     u8 palInd = (atBits << 2) | bgBits;
 
     if (scanline < 240 and cycle >= 1 and cycle <= 256)
-        ((u32*) s->pixels) [scanline * 256 + (cycle - 1)] = rendering() ? (palette[palInd] * 4) << 8 : 0;
+        ((u32*) s->pixels) [scanline * 256 + (cycle - 1)] = rendering() ? nes_rgb[palette[palInd]] : 0;
 
     bgShiftL <<= 1; bgShiftH <<= 1;
 }
@@ -205,7 +217,7 @@ void step()
     scanline = cycle ? scanline : (scanline + 1);
 }
 
-void init()
+void power()
 {
     SDL_Init(SDL_INIT_VIDEO);
     s = SDL_SetVideoMode(256, 240, 32, 0);

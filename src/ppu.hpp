@@ -1,4 +1,4 @@
-#include "types.hpp"
+#include "common.hpp"
 
 #ifndef PPU_HPP
 #define PPU_HPP
@@ -70,7 +70,7 @@ union Addr
     unsigned r : 15;
 };
 
-void init();
+void power();
 void step();
 template <bool write> u8 access(u16 index, u8 v = 0);
 

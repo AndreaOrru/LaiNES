@@ -5,7 +5,7 @@
 int main(int argc, char *argv[])
 {
     Cartridge::load(argv[1]);
-    PPU::init();
+    PPU::power();
     CPU::power();
 
     CPU::run();

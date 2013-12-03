@@ -93,8 +93,8 @@ template<u8& s, u8& d> void tr()      { upd_nz(d = s); T; }
 template<>             void tr<X,S>() { S = X;         T; }  // TSX, exception.
 
 /* Stack operations */
-void PLP() { T; T; P.reg = (pop() & 0b11001111) | (P.reg & 0b00110000); }
-void PHP() { T; push(P.reg | (1 << 4)); }
+void PLP() { T; T; P.reg = (pop() & 0b11001111) | (P.reg & 0b00110000); }  // Ignore bits 4 and 5.
+void PHP() { T; push(P.reg | (1 << 4));  }  // B flag set.
 void PLA() { T; T; A = pop(); upd_nz(A); }
 void PHA() { T; push(A); }
 
@@ -220,6 +220,7 @@ void reset()
     PC = rd16(0xFFFC);
 }
 
+/* Turn on the CPU */
 void power()
 {
     P.reg = 0x34;
@@ -229,6 +230,7 @@ void power()
     reset();
 }
 
+/* Start the execution */
 void run()
 {
     while (true)
