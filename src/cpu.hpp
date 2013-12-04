@@ -5,11 +5,11 @@
 namespace CPU {
 
 
-// Addressing mode:
-typedef u16 (*Mode)(void);
+enum IntType { NMI, RESET, IRQ, BRK };  // Interrupt type.
+typedef u16 (*Mode)(void);              // Addressing mode.
 
 /* Processor flags */
-enum {C, Z, I, D, B, UNUSED, V, N};
+enum Flag {C, Z, I, D, B, UNUSED, V, N};
 union Flags
 {
     struct
@@ -25,8 +25,8 @@ union Flags
     };
     u8 reg;
 
-    bool get(u8 i)         { return reg & (1 << i); }
-    void set(u8 i, bool v) { reg = v ? (reg | (1 << i)) : (reg & ~(1 << i)); }
+    bool get(Flag i)         { return reg & (1 << i); }
+    void set(Flag i, bool v) { reg = v ? (reg | (1 << i)) : (reg & ~(1 << i)); }
 };
 
 void set_nmi();

@@ -207,7 +207,7 @@ void step()
             if (cycle == 340)
             {
                 // Restart from the first pixel on the screen:
-                cycle = (rendering() && frameOdd) ? 1 : 0;   // Skip one cicle on odd frames.
+                cycle = (rendering() && frameOdd) ? 1 : 0;  // Skip cycle on odd frames.
                 scanline = 0; frameOdd ^= 1;
                 return;  // Don't update scanline and cycle.
             }

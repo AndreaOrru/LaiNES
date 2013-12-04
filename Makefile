@@ -1,5 +1,5 @@
 CXX      = clang++
-CXXFLAGS = -std=c++11
+CXXFLAGS = -O3 -march=native -std=c++11
 LIBS     = -lSDL
 
 SRC = $(wildcard src/*.cpp)

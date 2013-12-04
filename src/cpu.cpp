@@ -99,7 +99,7 @@ void PLA() { T; T; A = pop(); upd_nz(A); }
 void PHA() { T; push(A); }
 
 /* Flow control (branches, jumps) */
-template<u8 f, bool v> void br() { s8 j = rd(imm()); if (P.get(f) == v) { T; PC += j; } }
+template<Flag f, bool v> void br() { s8 j = rd(imm()); if (P.get(f) == v) { T; PC += j; } }
 void JMP_IND() { u16 i = rd16(imm16()); PC = rd16_d(i, (i&0xFF00) | ((i+1) % 0x100)); }
 void JMP()     { PC = rd16(imm16()); }
 void JSR()     { u16 t = PC+1; T; push(t >> 8); push(t); PC = rd16(imm16()); }
@@ -108,9 +108,23 @@ void JSR()     { u16 t = PC+1; T; push(t >> 8); push(t); PC = rd16(imm16()); }
 void RTS() { T; T;  PC = (pop() | (pop() << 8)) + 1; T; }
 void RTI() { PLP(); PC =  pop() | (pop() << 8);         }
 
-template<u8 f, bool v> void flag() { P.set(f, v); T; }  // Clear and set flags.
-void NOP() { T;         }
-void BRK() { /* TODO */ }
+template<Flag f, bool v> void flag() { P.set(f, v); T; }  // Clear and set flags.
+template<IntType t> void INT()
+{
+    T; if (t != BRK) T;  // BRK already performed the fetch.
+    if (t != RESET)  // Writes on stack are inhibited on RESET.
+    {
+        push(PC >> 8); push(PC & 0xFF);
+        push(P.reg | ((t == BRK) << 4));  // Set B if BRK.
+    }
+    else { S -= 3; T; T; T; }
+    P.i = true;
+                          /*   NMI    Reset    IRQ     BRK  */
+    constexpr u16 vect[] = { 0xFFFA, 0xFFFC, 0xFFFE, 0xFFFE };
+    PC = rd16(vect[t]);
+    if (t == NMI) nmi = false;
+}
+void NOP() { T; }
 
 /* Execute a CPU instruction */
 void exec()
@@ -118,7 +132,7 @@ void exec()
     switch (rd(PC++))  // Fetch the opcode.
     {
         // Select the right function to emulate the instruction:
-        case 0x00: return BRK()       ;  case 0x01: return ORA<izx>()  ;
+        case 0x00: return INT<BRK>()  ;  case 0x01: return ORA<izx>()  ;
         case 0x05: return ORA<zp>()   ;  case 0x06: return ASL<zp>()   ;
         case 0x08: return PHP()       ;  case 0x09: return ORA<imm>()  ;
         case 0x0A: return ASL_A()     ;  case 0x0D: return ORA<abs>()  ;
@@ -197,28 +211,7 @@ void exec()
     }
 }
 
-void handle_nmi()
-{
-    T; T;
-
-    push(PC >> 8);
-    push(PC & 0xFF);
-    push(P.reg);
-    PC = rd16(0xFFFA);
-
-    nmi = false;
-}
 void set_nmi() { nmi = true; }
-
-void reset()
-{
-    T; T; T;
-
-    S -= 3;
-    P.i = true;
-
-    PC = rd16(0xFFFC);
-}
 
 /* Turn on the CPU */
 void power()
@@ -227,7 +220,7 @@ void power()
     A = X = Y = S = 0x00;
     memset(RAM, 0xFF, sizeof(RAM));
 
-    reset();
+    INT<RESET>();
 }
 
 /* Start the execution */
@@ -237,7 +230,7 @@ void run()
     {
         exec();
 
-        if (nmi) handle_nmi();
+        if (nmi) INT<NMI>();
     }
 }
 
