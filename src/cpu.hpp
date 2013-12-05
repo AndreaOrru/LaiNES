@@ -9,24 +9,17 @@ enum IntType { NMI, RESET, IRQ, BRK };  // Interrupt type.
 typedef u16 (*Mode)(void);              // Addressing mode.
 
 /* Processor flags */
-enum Flag {C, Z, I, D, B, UNUSED, V, N};
-union Flags
+enum Flag {C, Z, I, D, V, N};
+class Flags
 {
-    struct
-    {
-        bool c : 1;      // Carry.
-        bool z : 1;      // Zero.
-        bool i : 1;      // Interrupt priority.
-        bool d : 1;      // Decimal (unused).
-        bool b : 1;
-        bool unused : 1;
-        bool v : 1;      // Overflow.
-        bool n : 1;      // Negative.
-    };
-    u8 reg;
+    bool f[6];
 
-    bool get(Flag i)         { return reg & (1 << i); }
-    void set(Flag i, bool v) { reg = v ? (reg | (1 << i)) : (reg & ~(1 << i)); }
+  public:
+    bool& operator[] (const int i) { return f[i]; }
+
+    u8 get() { return f[C] | f[Z] << 1 | f[I] << 2 | f[D] << 3 | 1 << 5 | f[V] << 6 | f[N] << 7; }
+    void set(u8 p) { f[C] = NTH_BIT(p, 0); f[Z] = NTH_BIT(p, 1); f[I] = NTH_BIT(p, 2);
+                     f[D] = NTH_BIT(p, 3); f[V] = NTH_BIT(p, 6); f[N] = NTH_BIT(p, 7); }
 };
 
 void set_nmi();

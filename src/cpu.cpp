@@ -19,8 +19,8 @@ bool nmi;
 inline void tick() { PPU::step(); PPU::step(); PPU::step(); }
 
 /* Flags updating */
-inline void upd_cv(u8 x, u8 y, s16 r) { P.c = (r>0xFF); P.v = ~(x^y) & (x^r) & 0x80; }
-inline void upd_nz(u8 x)              { P.n = x & 0x80; P.z = (x == 0);              }
+inline void upd_cv(u8 x, u8 y, s16 r) { P[C] = (r>0xFF); P[V] = ~(x^y) & (x^r) & 0x80; }
+inline void upd_nz(u8 x)              { P[N] = x & 0x80; P[Z] = (x == 0);              }
 // Does adding I to A cross a page?
 inline bool cross(u16 a, u8 i) { return ((a+i) & 0xFF00) != ((a & 0xFF00)); }
 
@@ -61,20 +61,20 @@ template<>              void st<A,abx>() { T; wr( abs() + X, A); }  // ...
 template<>              void st<A,aby>() { T; wr( abs() + Y, A); }  // ...
 
 #define G  u16 a = m(); u8 p = rd(a)  /* Fetch parameter */
-template<u8& r, Mode m> void ld()  { G; upd_nz(r = p);                 }  // LDx
-template<u8& r, Mode m> void cmp() { G; upd_nz(r - p); P.c = (r >= p); }  // CMP, CPx
+template<u8& r, Mode m> void ld()  { G; upd_nz(r = p);                  }  // LDx
+template<u8& r, Mode m> void cmp() { G; upd_nz(r - p); P[C] = (r >= p); }  // CMP, CPx
 /* Arithmetic and bitwise */
-template<Mode m> void ADC() { G       ; s16 r = A + p + P.c; upd_cv(A, p, r); upd_nz(A = r); }
-template<Mode m> void SBC() { G ^ 0xFF; s16 r = A + p + P.c; upd_cv(A, p, r); upd_nz(A = r); }
-template<Mode m> void BIT() { G; P.z = !(A & p); P.n = p & 0x80; P.v = p & 0x40; }
+template<Mode m> void ADC() { G       ; s16 r = A + p + P[C]; upd_cv(A, p, r); upd_nz(A = r); }
+template<Mode m> void SBC() { G ^ 0xFF; s16 r = A + p + P[C]; upd_cv(A, p, r); upd_nz(A = r); }
+template<Mode m> void BIT() { G; P[Z] = !(A & p); P[N] = p & 0x80; P[V] = p & 0x40; }
 template<Mode m> void AND() { G; upd_nz(A &= p); }
 template<Mode m> void EOR() { G; upd_nz(A ^= p); }
 template<Mode m> void ORA() { G; upd_nz(A |= p); }
 /* Read-Modify-Write */
-template<Mode m> void ASL() { G; P.c = p & 0x80; T; upd_nz(wr(a, p << 1)); }
-template<Mode m> void LSR() { G; P.c = p & 0x01; T; upd_nz(wr(a, p >> 1)); }
-template<Mode m> void ROL() { G; u8 c = P.c     ; P.c = p & 0x80; T; upd_nz(wr(a, (p << 1) | c) ); }
-template<Mode m> void ROR() { G; u8 c = P.c << 7; P.c = p & 0x01; T; upd_nz(wr(a, c | (p >> 1)) ); }
+template<Mode m> void ASL() { G; P[C] = p & 0x80; T; upd_nz(wr(a, p << 1)); }
+template<Mode m> void LSR() { G; P[C] = p & 0x01; T; upd_nz(wr(a, p >> 1)); }
+template<Mode m> void ROL() { G; u8 c = P[C]     ; P[C] = p & 0x80; T; upd_nz(wr(a, (p << 1) | c) ); }
+template<Mode m> void ROR() { G; u8 c = P[C] << 7; P[C] = p & 0x01; T; upd_nz(wr(a, c | (p >> 1)) ); }
 template<Mode m> void DEC() { G; T; upd_nz(wr(a, --p)); }
 template<Mode m> void INC() { G; T; upd_nz(wr(a, ++p)); }
 #undef G
@@ -83,23 +83,23 @@ template<Mode m> void INC() { G; T; upd_nz(wr(a, ++p)); }
 template<u8& r> void dec() { upd_nz(--r); T; }
 template<u8& r> void inc() { upd_nz(++r); T; }
 /* Bit shifting on the accumulator */
-void ASL_A() { P.c = A & 0x80; upd_nz(A <<= 1); T; }
-void LSR_A() { P.c = A & 0x01; upd_nz(A >>= 1); T; }
-void ROL_A() { u8 c = P.c     ; P.c = A & 0x80; upd_nz(A = ((A << 1) | c) ); T; }
-void ROR_A() { u8 c = P.c << 7; P.c = A & 0x01; upd_nz(A = (c | (A >> 1)) ); T; }
+void ASL_A() { P[C] = A & 0x80; upd_nz(A <<= 1); T; }
+void LSR_A() { P[C] = A & 0x01; upd_nz(A >>= 1); T; }
+void ROL_A() { u8 c = P[C]     ; P[C] = A & 0x80; upd_nz(A = ((A << 1) | c) ); T; }
+void ROR_A() { u8 c = P[C] << 7; P[C] = A & 0x01; upd_nz(A = (c | (A >> 1)) ); T; }
 
 /* Txx (move values between registers) */
 template<u8& s, u8& d> void tr()      { upd_nz(d = s); T; }
 template<>             void tr<X,S>() { S = X;         T; }  // TSX, exception.
 
 /* Stack operations */
-void PLP() { T; T; P.reg = (pop() & 0b11001111) | (P.reg & 0b00110000); }  // Ignore bits 4 and 5.
-void PHP() { T; push(P.reg | (1 << 4));  }  // B flag set.
-void PLA() { T; T; A = pop(); upd_nz(A); }
+void PLP() { T; T; P.set(pop()); }
+void PHP() { T; push(P.get() | (1 << 4)); }  // B flag set.
+void PLA() { T; T; A = pop(); upd_nz(A);  }
 void PHA() { T; push(A); }
 
 /* Flow control (branches, jumps) */
-template<Flag f, bool v> void br() { s8 j = rd(imm()); if (P.get(f) == v) { T; PC += j; } }
+template<Flag f, bool v> void br() { s8 j = rd(imm()); if (P[f] == v) { T; PC += j; } }
 void JMP_IND() { u16 i = rd16(imm16()); PC = rd16_d(i, (i&0xFF00) | ((i+1) % 0x100)); }
 void JMP()     { PC = rd16(imm16()); }
 void JSR()     { u16 t = PC+1; T; push(t >> 8); push(t); PC = rd16(imm16()); }
@@ -108,17 +108,17 @@ void JSR()     { u16 t = PC+1; T; push(t >> 8); push(t); PC = rd16(imm16()); }
 void RTS() { T; T;  PC = (pop() | (pop() << 8)) + 1; T; }
 void RTI() { PLP(); PC =  pop() | (pop() << 8);         }
 
-template<Flag f, bool v> void flag() { P.set(f, v); T; }  // Clear and set flags.
+template<Flag f, bool v> void flag() { P[f] = v; T; }  // Clear and set flags.
 template<IntType t> void INT()
 {
     T; if (t != BRK) T;  // BRK already performed the fetch.
     if (t != RESET)  // Writes on stack are inhibited on RESET.
     {
         push(PC >> 8); push(PC & 0xFF);
-        push(P.reg | ((t == BRK) << 4));  // Set B if BRK.
+        push(P.get() | ((t == BRK) << 4));  // Set B if BRK.
     }
     else { S -= 3; T; T; T; }
-    P.i = true;
+    P[I] = true;
                           /*   NMI    Reset    IRQ     BRK  */
     constexpr u16 vect[] = { 0xFFFA, 0xFFFC, 0xFFFE, 0xFFFE };
     PC = rd16(vect[t]);
@@ -216,7 +216,7 @@ void set_nmi() { nmi = true; }
 /* Turn on the CPU */
 void power()
 {
-    P.reg = 0x34;
+    P.set(0x04);
     A = X = Y = S = 0x00;
     memset(RAM, 0xFF, sizeof(RAM));
 
