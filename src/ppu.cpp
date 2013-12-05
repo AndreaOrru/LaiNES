@@ -23,6 +23,7 @@ Status status;      // PPUSTATUS ($2002) register.
 u8 nt, at, bgL, bgH;
 // Background shift registers:
 u8 atShiftL, atShiftH; u16 bgShiftL, bgShiftH;
+bool atLatchL, atLatchH;
 
 // Rendering counters:
 int scanline, cycle;
@@ -123,26 +124,28 @@ inline void reload_shift()
 {
     bgShiftL = (bgShiftL & 0xFF00) | bgL;
     bgShiftH = (bgShiftH & 0xFF00) | bgH;
-    if (!(vAddr.cX % 2))  // Attributes change every 16 pixel.
-    {                     // FIXME: I think this breaks fineX scrolling.
-        atShiftL = (atShiftL << 1) |  (at & 1);
-        atShiftH = (atShiftH << 1) | ((at & 2) >> 1);
-    }
+
+    atLatchL = (at & 1);
+    atLatchH = (at & 2);
 }
 
 /* Process a pixel, draw it if it's on screen */
 void pixel()
 {
-    u8 bgBits = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
-                 NTH_BIT(bgShiftL, 15 - fX);
-    u8 atBits = ((atShiftH & 1) << 1) |
-                 (atShiftL & 1);
-    u8 palInd = rendering() ? ((atBits << 2) | bgBits) : 0;
-
     if (scanline < 240 and cycle >= 1 and cycle <= 256)
+    {
+        u8 bgBits = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
+                     NTH_BIT(bgShiftL, 15 - fX);
+        u8 atBits = (NTH_BIT(atShiftH,  7 - fX) << 1) |
+                     NTH_BIT(atShiftL,  7 - fX);
+        u8 palInd = rendering() ? ((atBits << 2) | bgBits) : 0;
+
         IO::draw_pixel(cycle - 1, scanline, nes_rgb[rd(0x3F00 | palInd)]);
+    }
 
     bgShiftL <<= 1; bgShiftH <<= 1;
+    atShiftL = (atShiftL << 1) | atLatchL;
+    atShiftH = (atShiftH << 1) | atLatchH;
 }
 
 /* Execute a cycle of a scanline */
