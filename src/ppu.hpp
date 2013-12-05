@@ -5,6 +5,8 @@
 namespace PPU {
 
 
+enum Scanline { VISIBLE, POST, NMI, PRE };
+
 /* PPUCTRL ($2000) register */
 union Ctrl
 {
@@ -70,9 +72,8 @@ union Addr
     unsigned r : 15;
 };
 
-void power();
-void step();
 template <bool write> u8 access(u16 index, u8 v = 0);
+void step();
 
 
 }

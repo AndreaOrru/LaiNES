@@ -1,14 +1,12 @@
-#include <csignal>
-#include <SDL/SDL.h>
 #include "cartridge.hpp"
 #include "cpu.hpp"
-#include "ppu_case.hpp"
+#include "io.hpp"
 #include "ppu.hpp"
 
 namespace PPU {
+#include "palette.inc"
 
 
-SDL_Surface* s;
 u8 ciRam[0x800];    // VRAM for nametables.
 u8 palette[0x20];   // VRAM for palettes.
 u8 oam[0x100];      // VRAM for sprites.
@@ -29,16 +27,6 @@ u8 atShiftL, atShiftH; u16 bgShiftL, bgShiftH;
 // Rendering counters:
 int scanline, cycle;
 bool frameOdd;
-
-u32 nes_rgb[] =
-{ 0x7C7C7C, 0x0000FC, 0x0000BC, 0x4428BC, 0x940084, 0xA80020, 0xA81000, 0x881400,
-  0x503000, 0x007800, 0x006800, 0x005800, 0x004058, 0x000000, 0x000000, 0x000000,
-  0xBCBCBC, 0x0078F8, 0x0058F8, 0x6844FC, 0xD800CC, 0xE40058, 0xF83800, 0xE45C10,
-  0xAC7C00, 0x00B800, 0x00A800, 0x00A844, 0x008888, 0x000000, 0x000000, 0x000000,
-  0xF8F8F8, 0x3CBCFC, 0x6888FC, 0x9878F8, 0xF878F8, 0xF85898, 0xF87858, 0xFCA044,
-  0xF8B800, 0xB8F818, 0x58D854, 0x58F898, 0x00E8D8, 0x787878, 0x000000, 0x000000,
-  0xFCFCFC, 0xA4E4FC, 0xB8B8F8, 0xD8B8F8, 0xF8B8F8, 0xF8A4C0, 0xF0D0B0, 0xFCE0A8,
-  0xF8D878, 0xD8F878, 0xB8F8B8, 0xB8F8D8, 0x00FCFC, 0xF8D8F8, 0x000000, 0x000000 };
 
 inline bool rendering() { return mask.bg || mask.spr; }
 
@@ -73,19 +61,19 @@ template <bool write> u8 access(u16 index, u8 v)
 
         switch (index)
         {
-            case 0:  ctrl.r = v; tAddr.nt = ctrl.nt; break;                // PPUCTRL   ($2000).
-            case 1:  mask.r = v; break;                                    // PPUMASK   ($2001).
-            case 3:  oamAddr = v; break;                                   // OAMADDR   ($2003).
-            case 4:  oam[oamAddr++] = v; break;                            // OAMDATA   ($2004).
-            case 5:                                                        // PPUSCROLL ($2005).
-                if (!latch) { fX = v & 7; tAddr.cX = v >> 3; }               // First write.
-                else  { tAddr.fY = v & 7; tAddr.cY = v >> 3; }               // Second write.
+            case 0:  ctrl.r = v; tAddr.nt = ctrl.nt; break;       // PPUCTRL   ($2000).
+            case 1:  mask.r = v; break;                           // PPUMASK   ($2001).
+            case 3:  oamAddr = v; break;                          // OAMADDR   ($2003).
+            case 4:  oam[oamAddr++] = v; break;                   // OAMDATA   ($2004).
+            case 5:                                               // PPUSCROLL ($2005).
+                if (!latch) { fX = v & 7; tAddr.cX = v >> 3; }      // First write.
+                else  { tAddr.fY = v & 7; tAddr.cY = v >> 3; }      // Second write.
                 latch = !latch; break;
-            case 6:                                                        // PPUADDR   ($2006).
-                if (!latch) { tAddr.h = v & 0x3F; }                           // First write.
-                else        { tAddr.l = v; vAddr.r = tAddr.r; }               // Second write.
+            case 6:                                               // PPUADDR   ($2006).
+                if (!latch) { tAddr.h = v & 0x3F; }                 // First write.
+                else        { tAddr.l = v; vAddr.r = tAddr.r; }     // Second write.
                 latch = !latch; break;
-            case 7:  wr(vAddr.addr, v); vAddr.addr += ctrl.incr ? 32 : 1;  // PPUDATA   ($2007).
+            case 7:  wr(vAddr.addr, v); vAddr.addr += ctrl.incr ? 32 : 1;  // PPUDATA ($2007).
         }
     }
     /* Read from register */
@@ -130,98 +118,94 @@ inline void v_scroll()
 /* Copy scrolling data from loopy T to loopy V */
 inline void h_update() { if (!rendering()) return; vAddr.r = (vAddr.r & ~0x041F) | (tAddr.r & 0x041F); }
 inline void v_update() { if (!rendering()) return; vAddr.r = (vAddr.r & ~0x7BE0) | (tAddr.r & 0x7BE0); }
-// Put new data into the shift registers:
+/* Put new data into the shift registers */
 inline void reload_shift()
 {
     bgShiftL = (bgShiftL & 0xFF00) | bgL;
     bgShiftH = (bgShiftH & 0xFF00) | bgH;
-    if (!(vAddr.cX % 2))
-    {
+    if (!(vAddr.cX % 2))  // Attributes change every 16 pixel.
+    {                     // FIXME: I think this breaks fineX scrolling.
         atShiftL = (atShiftL << 1) |  (at & 1);
         atShiftH = (atShiftH << 1) | ((at & 2) >> 1);
     }
 }
 
+/* Process a pixel, draw it if it's on screen */
 void pixel()
 {
     u8 bgBits = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
                  NTH_BIT(bgShiftL, 15 - fX);
     u8 atBits = ((atShiftH & 1) << 1) |
                  (atShiftL & 1);
-    u8 palInd = (atBits << 2) | bgBits;
+    u8 palInd = rendering() ? ((atBits << 2) | bgBits) : 0;
 
     if (scanline < 240 and cycle >= 1 and cycle <= 256)
-        ((u32*) s->pixels) [scanline * 256 + (cycle - 1)] = rendering() ? nes_rgb[rd(0x3F00 | palInd)] : 0;
+        IO::draw_pixel(cycle - 1, scanline, nes_rgb[rd(0x3F00 | palInd)]);
 
     bgShiftL <<= 1; bgShiftH <<= 1;
 }
 
-/* Execute a cycle of a scanline (prerender or visible) */
-template <bool pre> void scanline_()
+/* Execute a cycle of a scanline */
+template<Scanline s> void scanline_cycle()
 {
     static u16 addr;
 
-    switch (cycle)
-    {
-        // Nametable fetching:
-        TILE_PHASE_1:  if (pre && cycle == 1) status.vBlank = false;  // Disable VBlank in prerender.
-                       addr = nt_addr(); pixel(); break;
-        TILE_PHASE_2:  nt   = rd(addr);  pixel(); break;
-        // Attribute fetching:
-        TILE_PHASE_3:  addr = at_addr(); pixel(); break;
-        TILE_PHASE_4:  at   = rd(addr);  if (vAddr.cY & 2) at >>= 4;
-                                         if (vAddr.cX & 2) at >>= 2;
-                                         pixel(); break;
-        // Background fetching (low bits):
-        TILE_PHASE_5:  addr = bg_addr(); pixel(); break;
-        TILE_PHASE_6:  bgL  = rd(addr);  pixel(); break;
-        // Attribute fetching (high bits):
-        TILE_PHASE_7:  addr += 8;        pixel(); break;
-        TILE_PHASE_8:  bgH  = rd(addr); h_scroll(); pixel(); reload_shift(); break;
+    if (s == NMI and cycle == 1) { status.vBlank = true; if (ctrl.nmi) CPU::set_nmi(); }
+    else if (s == POST and cycle == 0) IO::flush_screen();
+    else if (s == VISIBLE or s == PRE)
+        switch (cycle)
+        {
+            case 2 ... 255: case 322 ... 337:
+                switch (cycle % 8)
+                {
+                    // Nametable:
+                    case 1:  addr  = nt_addr(); reload_shift(); break;
+                    case 2:  nt    = rd(addr);  break;
+                    // Attribute:
+                    case 3:  addr  = at_addr(); break;
+                    case 4:  at    = rd(addr);  if (vAddr.cY & 2) at >>= 4;
+                                                if (vAddr.cX & 2) at >>= 2; break;
+                    // Background (low bits):
+                    case 5:  addr  = bg_addr(); break;
+                    case 6:  bgL   = rd(addr);  break;
+                    // Background (high bits):
+                    case 7:  addr += 8;         break;
+                    case 0:  bgH   = rd(addr); h_scroll();
+                }
+                pixel(); break;
+            case         256:  bgH = rd(addr); v_scroll(); pixel(); break;  // Vertical bump.
+            case         257:  reload_shift(); h_update(); break;  // Update horizontal position.
+            case 280 ... 304:  if (s == PRE)   v_update(); break;  // Update vertical position.
 
-        case 256:      bgH  = rd(addr); h_scroll(); v_scroll(); pixel(); reload_shift(); break;  // End of line.
-        case 257:      h_update(); break;  // Update horizontal scrolling info.
-
-        case 280 ... 304:  // Vertical scrolling update in prerender scanline.
-            if (pre) v_update();
-    }
+            // No shift reloading:
+            case             1:  addr = nt_addr(); if (s == PRE) status.vBlank = false; break;
+            case 321: case 339:  addr = nt_addr(); break;
+            // Nametable fetch instead of attribute:
+            case           338:  nt = rd(addr); break;
+            case           340:  nt = rd(addr); if (s == PRE && rendering() && frameOdd) cycle++;
+        }
 }
-inline void scanline_visible()   { scanline_<0>(); }
-inline void scanline_prerender() { scanline_<1>(); }
 
 /* Execute a PPU cycle. */
 void step()
 {
     switch (scanline)
     {
-        case 0 ... 239:  scanline_visible(); break;  // Visible scanline.
-        case 240:
-            if (cycle == 0) SDL_Flip(s); break;
-
-        case 241:  // Signal VBlank.
-            if (cycle == 1) { status.vBlank = true; if (ctrl.nmi) CPU::set_nmi(); }
-            break;
-
-        case 261:  // Pre-render scanline.
-            scanline_prerender();
-            if (cycle == 340)
-            {
-                // Restart from the first pixel on the screen:
-                cycle = (rendering() && frameOdd) ? 1 : 0;  // Skip cycle on odd frames.
-                scanline = 0; frameOdd ^= 1;
-                return;  // Don't update scanline and cycle.
-            }
+        case 0 ... 239:  scanline_cycle<VISIBLE>(); break;
+        case       240:  scanline_cycle<POST>();    break;
+        case       241:  scanline_cycle<NMI>();     break;
+        case       261:  scanline_cycle<PRE>();     break;
     }
-    // Update current cycle and scanline:
-    cycle = (cycle + 1) % 341;
-    scanline = cycle ? scanline : (scanline + 1);
-}
-
-void power()
-{
-    SDL_Init(SDL_INIT_VIDEO);
-    s = SDL_SetVideoMode(256, 240, 32, 0);
-    signal(SIGINT, SIG_DFL);
+    // Update cycle and scanline counters:
+    if (++cycle > 340)
+    {
+        cycle %= 341;
+        if (++scanline > 261)
+        {
+            scanline = 0;
+            frameOdd ^= 1;
+        }
+    }
 }
 
 
