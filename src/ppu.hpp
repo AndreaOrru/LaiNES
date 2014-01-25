@@ -1,7 +1,6 @@
+#pragma once
 #include "common.hpp"
 
-#ifndef PPU_HPP
-#define PPU_HPP
 namespace PPU {
 
 
@@ -77,4 +76,3 @@ void step();
 
 
 }
-#endif  // PPU_HPP

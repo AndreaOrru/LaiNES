@@ -1,7 +1,6 @@
+#pragma once
 #include "common.hpp"
 
-#ifndef CPU_HPP
-#define CPU_HPP
 namespace CPU {
 
 
@@ -28,4 +27,3 @@ void run();
 
 
 }
-#endif  // CPU_HPP

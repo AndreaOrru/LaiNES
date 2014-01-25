@@ -1,7 +1,6 @@
+#pragma once
 #include "common.hpp"
 
-#ifndef CARTRIDGE_HPP
-#define CARTRIDGE_HPP
 namespace Cartridge {
 
 
@@ -11,4 +10,3 @@ void load(const char* fname);
 
 
 }
-#endif  // CARTRIDGE_HPP

@@ -3,6 +3,7 @@
 #include "io.hpp"
 #include "ppu.hpp"
 
+
 int main(int argc, char *argv[])
 {
     IO::init();
