@@ -8,7 +8,7 @@ namespace PPU {
 
 
 u8 ciRam[0x800];           // VRAM for nametables.
-u8 palette[0x20];          // VRAM for palettes.
+u8 cgRam[0x20];            // VRAM for palettes.
 u8 oamMem[0x100];          // VRAM for sprite properties.
 Sprite oam[8], secOam[8];  // Sprite buffers.
 
@@ -31,18 +31,21 @@ int scanline, cycle;
 bool frameOdd;
 
 inline bool rendering() { return mask.bg || mask.spr; }
+inline int spr_height() { return ctrl.sprSz ? 16 : 8; }
 
 /* Access PPU memory */
 template <bool wr> u8 mem_access(u16 addr, u8 v = 0)
 {
     u8* ref;
-
-    if      (addr < 0x2000) return Cartridge::chr_access<wr>(addr, v);     // CHR-ROM/RAM.
-    else if (addr < 0x2800) ref = &ciRam[addr - 0x2000];                   // Nametables.
-    else if (addr < 0x3000) return 0x00;
-    else if (addr < 0x3F00) ref = &ciRam[addr - 0x3000];                   // Nametables (mirror).
-    else                    ref = &palette[(addr % 4) ? addr % 0x20 : 0];  // Palettes.
-
+    switch (addr)
+    {
+        case 0x0000 ... 0x1FFF:  return Cartridge::chr_access<wr>(addr, v);  // CHR-ROM/RAM.
+        case 0x2000 ... 0x3EFF:  ref = &ciRam[addr - 0x2000]; break;         // Nametables.
+        case 0x3F00 ... 0x3FFF:  // Palettes:
+            if ((addr & 0x13) == 0x10) addr &= ~0x10;
+            ref = &cgRam[addr & 0x1F];
+            break;
+    }
     if (wr) return *ref = v;
     else    return *ref;
 }
@@ -152,7 +155,8 @@ void eval_sprites()
     for (int i = 0; i < 64; i++)
     {
         int line = (scanline == 261 ? -1 : scanline) - oamMem[i*4 + 0];
-        if (line >= 0 and line < (ctrl.sprSz ? 16 : 8))
+        // If the sprite is in the scanline, copy its properties into secondary OAM:
+        if (line >= 0 and line < spr_height())
         {
             secOam[n].id   = i;
             secOam[n].y    = oamMem[i*4 + 0];
@@ -172,14 +176,20 @@ void eval_sprites()
 /* Load the sprite info into primary OAM and fetch their tile data. */
 void load_sprites()
 {
+    u16 addr;
     for (int i = 0; i < 8; i++)
     {
-        oam[i] = secOam[i];
+        oam[i] = secOam[i];  // Copy secondary OAM into primary.
 
-        u16 addr = (ctrl.sprTbl * 0x1000) + oam[i].tile * 16;
-        unsigned sprY = (scanline - oam[i].y) & 7;
-        if (oam[i].attr & 0x80) sprY ^= 7;
-        addr += sprY;
+        // Different address modes depending on the sprite height:
+        if (spr_height() == 16)
+            addr = ((oam[i].tile & 1) * 0x1000) + ((oam[i].tile & ~1) * 16);
+        else
+            addr = ( ctrl.sprTbl      * 0x1000) + ( oam[i].tile       * 16);
+
+        unsigned sprY = (scanline - oam[i].y) % spr_height();  // Line inside the sprite.
+        if (oam[i].attr & 0x80) sprY ^= spr_height() - 1;      // Vertical flip.
+        addr += sprY + (sprY & 8);  // Select the second tile if on 8x16.
 
         oam[i].dataL = rd(addr + 0);
         oam[i].dataH = rd(addr + 8);
@@ -189,38 +199,39 @@ void load_sprites()
 /* Process a pixel, draw it if it's on screen */
 void pixel()
 {
-    u8 bgBits, atBits, palette, objPalette = 0;
+    u8 palette, objPalette = 0;
     bool objPriority = 0;
 
     if (scanline < 240 and cycle >= 1 and cycle <= 256)
     {
         // Background:
-        bgBits  = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
+        palette = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
                    NTH_BIT(bgShiftL, 15 - fX);
-        atBits  = (NTH_BIT(atShiftH,  7 - fX) << 1) |
-                   NTH_BIT(atShiftL,  7 - fX);
-        palette = (atBits << 2) | bgBits;
+        if (palette)
+            palette |= ((NTH_BIT(atShiftH,  7 - fX) << 1) |
+                         NTH_BIT(atShiftL,  7 - fX))      << 2;
 
         // Sprites:
         for (int i = 7; i >= 0; i--)
         {
-            if (oam[i].id == 64) continue;
+            if (oam[i].id == 64) continue;      // Void entry.
 
             unsigned sprX = cycle - oam[i].x;
             if (sprX >= 8) continue;
-            if (oam[i].attr & 0x40) sprX ^= 7;
+            if (oam[i].attr & 0x40) sprX ^= 7;  // Horizontal flip.
 
             u8 sprPalette = (NTH_BIT(oam[i].dataH, 7 - sprX) << 1) |
                              NTH_BIT(oam[i].dataL, 7 - sprX);
             if (sprPalette == 0) continue;
-            sprPalette |= (oam[i].attr & 3) << 2;
 
+            if (oam[i].id == 0 && palette && cycle != 255) status.sprHit = true;
+            sprPalette |= (oam[i].attr & 3) << 2;
             objPalette  = sprPalette + 16;
             objPriority = oam[i].attr & 0x20;
         }
         if (objPalette && (palette == 0 || objPriority == 0)) palette = objPalette;
 
-        IO::draw_pixel(cycle - 1, scanline, nesRgb[rd(0x3F00 | (rendering() ? palette : 0))]);
+        IO::draw_pixel(cycle - 1, scanline, nesRgb[rd(0x3F00 + (rendering() ? palette : 0))]);
     }
 
     bgShiftL <<= 1; bgShiftH <<= 1;
@@ -240,7 +251,7 @@ template<Scanline s> void scanline_cycle()
         // Sprites:
         switch (cycle)
         {
-            case   1: clear_oam();    break;
+            case   1: clear_oam(); if (s == PRE) { status.sprOvf = status.sprHit = false; } break;
             case 257: eval_sprites(); break;
             case 321: load_sprites(); break;
         }

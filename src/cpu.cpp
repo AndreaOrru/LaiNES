@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "cartridge.hpp"
+#include "io.hpp"
 #include "ppu.hpp"
 #include "cpu.hpp"
 
@@ -33,11 +34,13 @@ template<bool wr> inline u8 access(u16 addr, u8 v = 0)
     {
         case 0x0000 ... 0x1FFF:  r = &ram[addr % 0x800]; if (wr) *r = v; return *r;  // RAM.
         case 0x2000 ... 0x3FFF:  return PPU::access<wr>(addr % 8, v);                // PPU.
-        case 0x4000 ... 0x4013:  return 0;
-        case            0x4014:  if (wr) dma_oam(v); return 0;                       // OAM DMA.
-        case 0x4015 ... 0x4020:  return 0;
-        default:                 return Cartridge::access<wr>(addr, v);              // Cartridge.
+        case            0x4014:  if (wr) dma_oam(v); break;                          // OAM DMA.
+        case            0x4016:  if (wr) { IO::write_joypad_strobe(v & 1); break; }  // Joypad strobe.
+                                 else return IO::read_joypad(0);                     // Joypad 0.
+        case            0x4017:  if (!wr) return IO::read_joypad(1); break;          // Joypad 1.
+        case 0x4018 ... 0xFFFF:  return Cartridge::access<wr>(addr, v);              // Cartridge.
     }
+    return 0;
 }
 inline u8  wr(u16 a, u8 v)      { return access<1>(a, v);      }
 inline u8  rd(u16 a)            { return access<0>(a);         }
