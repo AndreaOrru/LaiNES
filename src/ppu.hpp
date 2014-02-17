@@ -6,6 +6,18 @@ namespace PPU {
 
 enum Scanline { VISIBLE, POST, NMI, PRE };
 
+/* Sprite buffer */
+struct Sprite
+{
+    u8 id;     // Index in OAM.
+    u8 x;      // X position.
+    u8 y;      // Y position.
+    u8 tile;   // Tile index.
+    u8 attr;   // Attributes.
+    u8 dataL;  // Tile data (low).
+    u8 dataH;  // Tile data (high).
+};
+
 /* PPUCTRL ($2000) register */
 union Ctrl
 {
@@ -15,7 +27,7 @@ union Ctrl
         unsigned incr   : 1;  // Address increment (1 / 32).
         unsigned sprTbl : 1;  // Sprite pattern table ($0000 / $1000).
         unsigned bgTbl  : 1;  // BG pattern table ($0000 / $1000).
-        unsigned sprSz  : 1;  // Sprite size (8x8 / 16x8).
+        unsigned sprSz  : 1;  // Sprite size (8x8 / 8x16).
         unsigned slave  : 1;  // PPU master/slave.
         unsigned nmi    : 1;  // Enable NMI.
     };

@@ -8,7 +8,7 @@ namespace CPU {
 
 
 /* CPU state */
-u8 RAM[0x800];
+u8 ram[0x800];
 u8 A, X, Y, S;
 u16 PC;
 Flags P;
@@ -25,13 +25,19 @@ inline void upd_nz(u8 x)              { P[N] = x & 0x80; P[Z] = (x == 0);       
 inline bool cross(u16 a, u8 i) { return ((a+i) & 0xFF00) != ((a & 0xFF00)); }
 
 /* Memory access */
+void dma_oam(u8 bank);
 template<bool wr> inline u8 access(u16 addr, u8 v = 0)
 {
     T; u8* r;
-    if      (addr < 0x2000) { r = &RAM[addr % 0x800]; if (wr) *r = v; return *r; }  // RAM.
-    else if (addr < 0x4000) { return PPU::access<wr>(addr % 8, v); }                // PPU.
-    else if (addr < 0x4020) { return 0; }                                           // APU.
-    else                    { return Cartridge::access<wr>(addr, v); }              // Cartridge.
+    switch (addr)
+    {
+        case 0x0000 ... 0x1FFF:  r = &ram[addr % 0x800]; if (wr) *r = v; return *r;  // RAM.
+        case 0x2000 ... 0x3FFF:  return PPU::access<wr>(addr % 8, v);                // PPU.
+        case 0x4000 ... 0x4013:  return 0;
+        case            0x4014:  if (wr) dma_oam(v); return 0;                       // OAM DMA.
+        case 0x4015 ... 0x4020:  return 0;
+        default:                 return Cartridge::access<wr>(addr, v);              // Cartridge.
+    }
 }
 inline u8  wr(u16 a, u8 v)      { return access<1>(a, v);      }
 inline u8  rd(u16 a)            { return access<0>(a);         }
@@ -39,6 +45,7 @@ inline u16 rd16_d(u16 a, u16 b) { return rd(a) | (rd(b) << 8); }  // Read from A
 inline u16 rd16(u16 a)          { return rd16_d(a, a+1);       }
 inline u8  push(u8 v)           { return wr(0x100 + (S--), v); }
 inline u8  pop()                { return rd(0x100 + (++S));    }
+void dma_oam(u8 bank) { for (int i = 0; i < 256; i++)  wr(0x2014, rd(bank*0x100 + i)); }
 
 /* Addressing modes */
 inline u16 imm()   { return PC++;                                       }
@@ -218,7 +225,7 @@ void power()
 {
     P.set(0x04);
     A = X = Y = S = 0x00;
-    memset(RAM, 0xFF, sizeof(RAM));
+    memset(ram, 0xFF, sizeof(ram));
 
     INT<RESET>();
 }

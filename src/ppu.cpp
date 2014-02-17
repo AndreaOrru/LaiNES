@@ -7,17 +7,18 @@ namespace PPU {
 #include "palette.inc"
 
 
-u8 ciRam[0x800];    // VRAM for nametables.
-u8 palette[0x20];   // VRAM for palettes.
-u8 oam[0x100];      // VRAM for sprites.
+u8 ciRam[0x800];           // VRAM for nametables.
+u8 palette[0x20];          // VRAM for palettes.
+u8 oamMem[0x100];          // VRAM for sprite properties.
+Sprite oam[8], secOam[8];  // Sprite buffers.
 
 Addr vAddr, tAddr;  // Loopy V, T.
 u8 fX;              // Fine X.
 u8 oamAddr;         // OAM address.
 
-Ctrl ctrl;          // PPUCTRL   ($2000) register.
-Mask mask;          // PPUMASK   ($2001) register.
-Status status;      // PPUSTATUS ($2002) register.
+Ctrl ctrl;      // PPUCTRL   ($2000) register.
+Mask mask;      // PPUMASK   ($2001) register.
+Status status;  // PPUSTATUS ($2002) register.
 
 // Background latches:
 u8 nt, at, bgL, bgH;
@@ -65,7 +66,7 @@ template <bool write> u8 access(u16 index, u8 v)
             case 0:  ctrl.r = v; tAddr.nt = ctrl.nt; break;       // PPUCTRL   ($2000).
             case 1:  mask.r = v; break;                           // PPUMASK   ($2001).
             case 3:  oamAddr = v; break;                          // OAMADDR   ($2003).
-            case 4:  oam[oamAddr++] = v; break;                   // OAMDATA   ($2004).
+            case 4:  oamMem[oamAddr++] = v; break;                // OAMDATA   ($2004).
             case 5:                                               // PPUSCROLL ($2005).
                 if (!latch) { fX = v & 7; tAddr.cX = v >> 3; }      // First write.
                 else  { tAddr.fY = v & 7; tAddr.cY = v >> 3; }      // Second write.
@@ -83,8 +84,8 @@ template <bool write> u8 access(u16 index, u8 v)
         {
             // PPUSTATUS ($2002):
             case 2:  res = (res & 0x1F) | status.r; status.vBlank = 0; latch = 0; break;
-            case 4:  res = oam[oamAddr]; break;  // OAMDATA ($2004).
-            case 7:                              // PPUDATA ($2007).
+            case 4:  res = oamMem[oamAddr]; break;  // OAMDATA ($2004).
+            case 7:                                 // PPUDATA ($2007).
                 if (vAddr.addr <= 0x3EFF)
                 {
                     res = buffer;
@@ -129,18 +130,97 @@ inline void reload_shift()
     atLatchH = (at & 2);
 }
 
+/* Clear secondary OAM */
+void clear_oam()
+{
+    for (int i = 0; i < 8; i++)
+    {
+        secOam[i].id    = 64;
+        secOam[i].y     = 0xFF;
+        secOam[i].tile  = 0xFF;
+        secOam[i].attr  = 0xFF;
+        secOam[i].x     = 0xFF;
+        secOam[i].dataL = 0;
+        secOam[i].dataH = 0;
+    }
+}
+
+/* Fill secondary OAM with the sprite infos for the next scanline */
+void eval_sprites()
+{
+    int n = 0;
+    for (int i = 0; i < 64; i++)
+    {
+        int line = (scanline == 261 ? -1 : scanline) - oamMem[i*4 + 0];
+        if (line >= 0 and line < (ctrl.sprSz ? 16 : 8))
+        {
+            secOam[n].id   = i;
+            secOam[n].y    = oamMem[i*4 + 0];
+            secOam[n].tile = oamMem[i*4 + 1];
+            secOam[n].attr = oamMem[i*4 + 2];
+            secOam[n].x    = oamMem[i*4 + 3];
+
+            if (++n > 8)
+            {
+                status.sprOvf = true;
+                break;
+            }
+        }
+    }
+}
+
+/* Load the sprite info into primary OAM and fetch their tile data. */
+void load_sprites()
+{
+    for (int i = 0; i < 8; i++)
+    {
+        oam[i] = secOam[i];
+
+        u16 addr = (ctrl.sprTbl * 0x1000) + oam[i].tile * 16;
+        unsigned sprY = (scanline - oam[i].y) & 7;
+        if (oam[i].attr & 0x80) sprY ^= 7;
+        addr += sprY;
+
+        oam[i].dataL = rd(addr + 0);
+        oam[i].dataH = rd(addr + 8);
+    }
+}
+
 /* Process a pixel, draw it if it's on screen */
 void pixel()
 {
+    u8 bgBits, atBits, palette, objPalette = 0;
+    bool objPriority = 0;
+
     if (scanline < 240 and cycle >= 1 and cycle <= 256)
     {
-        u8 bgBits = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
-                     NTH_BIT(bgShiftL, 15 - fX);
-        u8 atBits = (NTH_BIT(atShiftH,  7 - fX) << 1) |
-                     NTH_BIT(atShiftL,  7 - fX);
-        u8 palInd = rendering() ? ((atBits << 2) | bgBits) : 0;
+        // Background:
+        bgBits  = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
+                   NTH_BIT(bgShiftL, 15 - fX);
+        atBits  = (NTH_BIT(atShiftH,  7 - fX) << 1) |
+                   NTH_BIT(atShiftL,  7 - fX);
+        palette = (atBits << 2) | bgBits;
 
-        IO::draw_pixel(cycle - 1, scanline, nes_rgb[rd(0x3F00 | palInd)]);
+        // Sprites:
+        for (int i = 7; i >= 0; i--)
+        {
+            if (oam[i].id == 64) continue;
+
+            unsigned sprX = cycle - oam[i].x;
+            if (sprX >= 8) continue;
+            if (oam[i].attr & 0x40) sprX ^= 7;
+
+            u8 sprPalette = (NTH_BIT(oam[i].dataH, 7 - sprX) << 1) |
+                             NTH_BIT(oam[i].dataL, 7 - sprX);
+            if (sprPalette == 0) continue;
+            sprPalette |= (oam[i].attr & 3) << 2;
+
+            objPalette  = sprPalette + 16;
+            objPriority = oam[i].attr & 0x20;
+        }
+        if (objPalette && (palette == 0 || objPriority == 0)) palette = objPalette;
+
+        IO::draw_pixel(cycle - 1, scanline, nesRgb[rd(0x3F00 | (rendering() ? palette : 0))]);
     }
 
     bgShiftL <<= 1; bgShiftH <<= 1;
@@ -156,6 +236,15 @@ template<Scanline s> void scanline_cycle()
     if (s == NMI and cycle == 1) { status.vBlank = true; if (ctrl.nmi) CPU::set_nmi(); }
     else if (s == POST and cycle == 0) IO::flush_screen();
     else if (s == VISIBLE or s == PRE)
+    {
+        // Sprites:
+        switch (cycle)
+        {
+            case   1: clear_oam();    break;
+            case 257: eval_sprites(); break;
+            case 321: load_sprites(); break;
+        }
+        // Background:
         switch (cycle)
         {
             case 2 ... 255: case 322 ... 337:
@@ -187,6 +276,7 @@ template<Scanline s> void scanline_cycle()
             case           338:  nt = rd(addr); break;
             case           340:  nt = rd(addr); if (s == PRE && rendering() && frameOdd) cycle++;
         }
+    }
 }
 
 /* Execute a PPU cycle. */
