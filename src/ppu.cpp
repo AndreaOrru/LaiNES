@@ -27,30 +27,36 @@ u8 atShiftL, atShiftH; u16 bgShiftL, bgShiftH;
 bool atLatchL, atLatchH;
 
 // Rendering counters:
-int scanline, cycle;
+int scanline, dot;
 bool frameOdd;
 
 inline bool rendering() { return mask.bg || mask.spr; }
 inline int spr_height() { return ctrl.sprSz ? 16 : 8; }
 
 /* Access PPU memory */
-template <bool wr> u8 mem_access(u16 addr, u8 v = 0)
+u8 rd(u16 addr)
 {
-    u8* ref;
     switch (addr)
     {
-        case 0x0000 ... 0x1FFF:  return Cartridge::chr_access<wr>(addr, v);  // CHR-ROM/RAM.
-        case 0x2000 ... 0x3EFF:  ref = &ciRam[addr - 0x2000]; break;         // Nametables.
+        case 0x0000 ... 0x1FFF:  return Cartridge::chr_access<0>(addr);  // CHR-ROM/RAM.
+        case 0x2000 ... 0x3EFF:  return ciRam[addr - 0x2000];            // Nametables.
         case 0x3F00 ... 0x3FFF:  // Palettes:
             if ((addr & 0x13) == 0x10) addr &= ~0x10;
-            ref = &cgRam[addr & 0x1F];
-            break;
+            return cgRam[addr & 0x1F] & (mask.gray ? 0x30 : 0xFF);
+        default: return 0;
     }
-    if (wr) return *ref = v;
-    else    return *ref;
 }
-inline u8 rd(u16 addr)       { return mem_access<0>(addr); }
-inline u8 wr(u16 addr, u8 v) { return mem_access<1>(addr, v); }
+void wr(u16 addr, u8 v)
+{
+    switch (addr)
+    {
+        case 0x0000 ... 0x1FFF:  Cartridge::chr_access<1>(addr, v); break;  // CHR-ROM/RAM.
+        case 0x2000 ... 0x3EFF:  ciRam[addr - 0x2000] = v; break;           // Nametables.
+        case 0x3F00 ... 0x3FFF:  // Palettes:
+            if ((addr & 0x13) == 0x10) addr &= ~0x10;
+            cgRam[addr & 0x1F] = v; break;
+    }
+}
 
 /* Access PPU through registers. */
 template <bool write> u8 access(u16 index, u8 v)
@@ -199,39 +205,44 @@ void load_sprites()
 /* Process a pixel, draw it if it's on screen */
 void pixel()
 {
-    u8 palette, objPalette = 0;
+    u8 palette = 0, objPalette = 0;
     bool objPriority = 0;
+    int x = dot - 2;
 
-    if (scanline < 240 and cycle >= 1 and cycle <= 256)
+    if (scanline < 240 and x >= 0 and x < 256)
     {
-        // Background:
-        palette = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
-                   NTH_BIT(bgShiftL, 15 - fX);
-        if (palette)
-            palette |= ((NTH_BIT(atShiftH,  7 - fX) << 1) |
-                         NTH_BIT(atShiftL,  7 - fX))      << 2;
+        if (mask.bg and not (!mask.bgLeft && x < 8))
+        {
+            // Background:
+            palette = (NTH_BIT(bgShiftH, 15 - fX) << 1) |
+                       NTH_BIT(bgShiftL, 15 - fX);
+            if (palette)
+                palette |= ((NTH_BIT(atShiftH,  7 - fX) << 1) |
+                             NTH_BIT(atShiftL,  7 - fX))      << 2;
+        }
 
         // Sprites:
-        for (int i = 7; i >= 0; i--)
-        {
-            if (oam[i].id == 64) continue;      // Void entry.
+        if (mask.spr and not (!mask.sprLeft && x < 8))
+            for (int i = 7; i >= 0; i--)
+            {
+                if (oam[i].id == 64) continue;  // Void entry.
 
-            unsigned sprX = cycle - oam[i].x;
-            if (sprX >= 8) continue;
-            if (oam[i].attr & 0x40) sprX ^= 7;  // Horizontal flip.
+                unsigned sprX = x - oam[i].x;
+                if (sprX >= 8) continue;
+                if (oam[i].attr & 0x40) sprX ^= 7;  // Horizontal flip.
 
-            u8 sprPalette = (NTH_BIT(oam[i].dataH, 7 - sprX) << 1) |
-                             NTH_BIT(oam[i].dataL, 7 - sprX);
-            if (sprPalette == 0) continue;
+                u8 sprPalette = (NTH_BIT(oam[i].dataH, 7 - sprX) << 1) |
+                                 NTH_BIT(oam[i].dataL, 7 - sprX);
+                if (sprPalette == 0) continue;
 
-            if (oam[i].id == 0 && palette && cycle != 255) status.sprHit = true;
-            sprPalette |= (oam[i].attr & 3) << 2;
-            objPalette  = sprPalette + 16;
-            objPriority = oam[i].attr & 0x20;
-        }
+                if (oam[i].id == 0 && palette && x != 255) status.sprHit = true;
+                sprPalette |= (oam[i].attr & 3) << 2;
+                objPalette  = sprPalette + 16;
+                objPriority = oam[i].attr & 0x20;
+            }
         if (objPalette && (palette == 0 || objPriority == 0)) palette = objPalette;
 
-        IO::draw_pixel(cycle - 1, scanline, nesRgb[rd(0x3F00 + (rendering() ? palette : 0))]);
+        IO::draw_pixel(x, scanline, nesRgb[rd(0x3F00 + (rendering() ? palette : 0))]);
     }
 
     bgShiftL <<= 1; bgShiftH <<= 1;
@@ -244,22 +255,23 @@ template<Scanline s> void scanline_cycle()
 {
     static u16 addr;
 
-    if (s == NMI and cycle == 1) { status.vBlank = true; if (ctrl.nmi) CPU::set_nmi(); }
-    else if (s == POST and cycle == 0) IO::flush_screen();
+    if (s == NMI and dot == 1) { status.vBlank = true; if (ctrl.nmi) CPU::set_nmi(); }
+    else if (s == POST and dot == 0) IO::flush_screen();
     else if (s == VISIBLE or s == PRE)
     {
         // Sprites:
-        switch (cycle)
+        switch (dot)
         {
             case   1: clear_oam(); if (s == PRE) { status.sprOvf = status.sprHit = false; } break;
             case 257: eval_sprites(); break;
             case 321: load_sprites(); break;
         }
         // Background:
-        switch (cycle)
+        switch (dot)
         {
             case 2 ... 255: case 322 ... 337:
-                switch (cycle % 8)
+                pixel();
+                switch (dot % 8)
                 {
                     // Nametable:
                     case 1:  addr  = nt_addr(); reload_shift(); break;
@@ -274,18 +286,17 @@ template<Scanline s> void scanline_cycle()
                     // Background (high bits):
                     case 7:  addr += 8;         break;
                     case 0:  bgH   = rd(addr); h_scroll();
-                }
-                pixel(); break;
-            case         256:  bgH = rd(addr); v_scroll(); pixel(); break;  // Vertical bump.
-            case         257:  reload_shift(); h_update(); break;  // Update horizontal position.
-            case 280 ... 304:  if (s == PRE)   v_update(); break;  // Update vertical position.
+                } break;
+            case         256:  pixel(); bgH = rd(addr); v_scroll(); break;  // Vertical bump.
+            case         257:  pixel(); reload_shift(); h_update(); break;  // Update horizontal position.
+            case 280 ... 304:  if (s == PRE)            v_update(); break;  // Update vertical position.
 
             // No shift reloading:
             case             1:  addr = nt_addr(); if (s == PRE) status.vBlank = false; break;
             case 321: case 339:  addr = nt_addr(); break;
             // Nametable fetch instead of attribute:
             case           338:  nt = rd(addr); break;
-            case           340:  nt = rd(addr); if (s == PRE && rendering() && frameOdd) cycle++;
+            case           340:  nt = rd(addr); if (s == PRE && rendering() && frameOdd) dot++;
         }
     }
 }
@@ -300,10 +311,10 @@ void step()
         case       241:  scanline_cycle<NMI>();     break;
         case       261:  scanline_cycle<PRE>();     break;
     }
-    // Update cycle and scanline counters:
-    if (++cycle > 340)
+    // Update dot and scanline counters:
+    if (++dot > 340)
     {
-        cycle %= 341;
+        dot %= 341;
         if (++scanline > 261)
         {
             scanline = 0;
