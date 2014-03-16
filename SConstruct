@@ -1,6 +1,10 @@
-flags = ['-O4', '-march=native', '-std=c++11']
+from os import environ
 
-env = Environment(CXX       = 'clang++',
+flags = ['-O3', '-march=native', '-std=c++11']
+
+env = Environment(ENV       = { 'TERM' : environ['TERM'] },
+                  CXX       = 'clang++',
+                  CPPPATH   = 'src',
                   CXXFLAGS  = flags,
                   LINKFLAGS = flags,
                   LIBS      = ['SDL2'])

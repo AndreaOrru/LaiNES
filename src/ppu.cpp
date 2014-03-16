@@ -220,31 +220,30 @@ void pixel()
                 palette |= ((NTH_BIT(atShiftH,  7 - fX) << 1) |
                              NTH_BIT(atShiftL,  7 - fX))      << 2;
         }
-
         // Sprites:
         if (mask.spr and not (!mask.sprLeft && x < 8))
             for (int i = 7; i >= 0; i--)
             {
                 if (oam[i].id == 64) continue;  // Void entry.
-
                 unsigned sprX = x - oam[i].x;
-                if (sprX >= 8) continue;
+                if (sprX >= 8) continue;            // Not in range.
                 if (oam[i].attr & 0x40) sprX ^= 7;  // Horizontal flip.
 
                 u8 sprPalette = (NTH_BIT(oam[i].dataH, 7 - sprX) << 1) |
                                  NTH_BIT(oam[i].dataL, 7 - sprX);
-                if (sprPalette == 0) continue;
+                if (sprPalette == 0) continue;  // Transparent pixel.
 
                 if (oam[i].id == 0 && palette && x != 255) status.sprHit = true;
                 sprPalette |= (oam[i].attr & 3) << 2;
                 objPalette  = sprPalette + 16;
                 objPriority = oam[i].attr & 0x20;
             }
+        // Evaluate priority:
         if (objPalette && (palette == 0 || objPriority == 0)) palette = objPalette;
 
         IO::draw_pixel(x, scanline, nesRgb[rd(0x3F00 + (rendering() ? palette : 0))]);
     }
-
+    // Perform background shifts:
     bgShiftL <<= 1; bgShiftH <<= 1;
     atShiftL = (atShiftL << 1) | atLatchL;
     atShiftH = (atShiftH << 1) | atLatchH;
@@ -285,7 +284,7 @@ template<Scanline s> void scanline_cycle()
                     case 6:  bgL   = rd(addr);  break;
                     // Background (high bits):
                     case 7:  addr += 8;         break;
-                    case 0:  bgH   = rd(addr); h_scroll();
+                    case 0:  bgH   = rd(addr); h_scroll(); break;
                 } break;
             case         256:  pixel(); bgH = rd(addr); v_scroll(); break;  // Vertical bump.
             case         257:  pixel(); reload_shift(); h_update(); break;  // Update horizontal position.
