@@ -1,5 +1,6 @@
 #include <cstdio>
 #include "mappers/mapper0.hpp"
+#include "mappers/mapper1.hpp"
 #include "cartridge.hpp"
 
 namespace Cartridge {
@@ -11,8 +12,7 @@ Mapper* mapper;
 template <bool wr> u8 access(u16 addr, u8 v)
 {
     if (!wr) return mapper->read(addr);
-    else            mapper->write(addr, v);
-    return v;
+    else     return mapper->write(addr, v);
 }
 template u8 access<0>(u16, u8); template u8 access<1>(u16, u8);
 
@@ -20,11 +20,11 @@ template u8 access<0>(u16, u8); template u8 access<1>(u16, u8);
 template <bool wr> u8 chr_access(u16 addr, u8 v)
 {
     if (!wr) return mapper->chr_read(addr);
-    else            mapper->chr_write(addr, v);
-    return v;
+    else     return mapper->chr_write(addr, v);
 }
 template u8 chr_access<0>(u16, u8); template u8 chr_access<1>(u16, u8);
 
+/* Load the ROM from a file. */
 void load(const char* fileName)
 {
     FILE* f = fopen(fileName, "rb");
@@ -40,7 +40,8 @@ void load(const char* fileName)
     int mapperNum = (rom[7] & 0xF0) | (rom[6] >> 4);
     switch (mapperNum)
     {
-        case 0:  mapper = new Mapper0(rom);
+        case 0:  mapper = new Mapper0(rom); break;
+        case 1:  mapper = new Mapper1(rom); break;
     }
 }
 

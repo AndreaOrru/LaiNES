@@ -6,33 +6,23 @@
 class Mapper
 {
   protected:
-    int banksMap[8];
-    u8 *rom, *vRam;
-    u32 prgSize, chrSize;
+    u32 prgMap[4];
+    u32 chrMap[8];
+
+    u8 *prg, *chr, *prgRam;
+    u32 prgSize, chrSize, prgRamSize;
+
+    void map_prg32k(int bank);
+    void map_prg16k(int slot, int bank);
+    void map_chr8k(int bank);
+    void map_chr4k(int slot, int bank);
 
   public:
-    Mapper(u8* rom)
-    {
-        prgSize = rom[4] * 0x4000;
-        chrSize = rom[5] * 0x2000;
+    Mapper(u8* rom);
 
-        this->rom  = new u8[prgSize];
-        this->vRam = new u8[chrSize];
+    u8 read(u16 addr);
+    virtual u8 write(u16 addr, u8 v) { return v; };
 
-        memcpy(this->rom , 16 + rom          , prgSize);
-        memcpy(this->vRam, 16 + rom + prgSize, chrSize);
-    }
-
-    u8 read(u16 addr)
-    {
-        addr -= 0x8000;
-        return rom[banksMap[addr / 0x1000] + (addr % 0x1000)];
-    }
-    virtual void write(u16 addr, u8 v) {};
-
-    virtual u8 chr_read(u16 addr)
-    {
-        return vRam[addr];
-    }
-    virtual void chr_write(u16 addr, u8 v) {};
+    u8 chr_read(u16 addr);
+    virtual u8 chr_write(u16 addr, u8 v) { return v; };
 };

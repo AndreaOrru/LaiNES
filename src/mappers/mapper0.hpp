@@ -7,7 +7,7 @@ class Mapper0 : public Mapper
   public:
     Mapper0(u8* rom) : Mapper(rom)
     {
-        for (int i = 0; i < 8; i++)
-            banksMap[i] = (i % (prgSize / 0x1000)) * 0x1000;
+        map_prg32k(0);
+        map_chr8k(0);
     }
 };
