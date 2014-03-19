@@ -1,11 +1,14 @@
+#include "ppu.hpp"
 #include "mapper.hpp"
+
 
 Mapper::Mapper(u8* rom)
 {
     // Read infos from header:
-    prgSize    = rom[4] * 0x4000;
-    chrSize    = rom[5] * 0x2000;
-    prgRamSize = rom[8] ? rom[8] * 0x2000 : 0x2000;
+    prgSize      = rom[4] * 0x4000;
+    chrSize      = rom[5] * 0x2000;
+    prgRamSize   = rom[8] ? rom[8] * 0x2000 : 0x2000;
+    set_mirroring((rom[6] & 1) ? PPU::VERTICAL : PPU::HORIZONTAL);
 
     this->prg    = rom + 16;
     this->prgRam = new u8[prgRamSize];

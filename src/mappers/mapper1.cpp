@@ -1,10 +1,16 @@
+#include "ppu.hpp"
 #include "mappers/mapper1.hpp"
 
 
 /* Apply the registers state */
 void Mapper1::apply()
 {
-    // Mirroring.
+    // Set mirroring:
+    switch (regs[0] & 0b11)
+    {
+        case 2:  set_mirroring(PPU::VERTICAL);   break;
+        case 3:  set_mirroring(PPU::HORIZONTAL); break;
+    }
 
     // 16KB PRG:
     if (regs[0] & 0b1000)

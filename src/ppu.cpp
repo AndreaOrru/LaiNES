@@ -7,6 +7,7 @@ namespace PPU {
 #include "palette.inc"
 
 
+Mirroring mirroring;       // Mirroring mode.
 u8 ciRam[0x800];           // VRAM for nametables.
 u8 cgRam[0x20];            // VRAM for palettes.
 u8 oamMem[0x100];          // VRAM for sprite properties.
@@ -33,13 +34,25 @@ bool frameOdd;
 inline bool rendering() { return mask.bg || mask.spr; }
 inline int spr_height() { return ctrl.sprSz ? 16 : 8; }
 
+/* Get CIRAM address according to mirroring */
+u16 nt_mirror(u16 addr)
+{
+    switch (mirroring)
+    {
+        case VERTICAL:    return addr % 0x800;
+        case HORIZONTAL:  return ((addr / 2) & 0x400) + (addr % 0x400);
+        default:          return addr - 0x2000;
+    }
+}
+void set_mirroring(Mirroring mode) { mirroring = mode; }
+
 /* Access PPU memory */
 u8 rd(u16 addr)
 {
     switch (addr)
     {
         case 0x0000 ... 0x1FFF:  return Cartridge::chr_access<0>(addr);  // CHR-ROM/RAM.
-        case 0x2000 ... 0x3EFF:  return ciRam[addr - 0x2000];            // Nametables.
+        case 0x2000 ... 0x3EFF:  return ciRam[nt_mirror(addr)];          // Nametables.
         case 0x3F00 ... 0x3FFF:  // Palettes:
             if ((addr & 0x13) == 0x10) addr &= ~0x10;
             return cgRam[addr & 0x1F] & (mask.gray ? 0x30 : 0xFF);
@@ -51,7 +64,7 @@ void wr(u16 addr, u8 v)
     switch (addr)
     {
         case 0x0000 ... 0x1FFF:  Cartridge::chr_access<1>(addr, v); break;  // CHR-ROM/RAM.
-        case 0x2000 ... 0x3EFF:  ciRam[addr - 0x2000] = v; break;           // Nametables.
+        case 0x2000 ... 0x3EFF:  ciRam[nt_mirror(addr)] = v; break;         // Nametables.
         case 0x3F00 ... 0x3FFF:  // Palettes:
             if ((addr & 0x13) == 0x10) addr &= ~0x10;
             cgRam[addr & 0x1F] = v; break;
