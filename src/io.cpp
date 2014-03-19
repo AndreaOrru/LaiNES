@@ -4,6 +4,7 @@
 
 namespace IO {
 
+
 // Screen size:
 const unsigned width  = 256;
 const unsigned height = 240;
@@ -18,6 +19,7 @@ u32 pixels[width * height];  // Video buffer.
 u8 joypad_bits[2];  // Joypad shift registers.
 bool strobe;        // Joypad strobe latch.
 
+/* Initialize SDL */
 void init()
 {
     SDL_Init(SDL_INIT_VIDEO);
@@ -37,6 +39,7 @@ void init()
     signal(SIGINT, SIG_DFL);
 }
 
+/* Get the joypad state from SDL */
 u8 get_joypad_state(int n)
 {
     u8 j = 0;
@@ -56,6 +59,7 @@ u8 get_joypad_state(int n)
     return j;
 }
 
+/* Read joypad state (NES register format) */
 u8 read_joypad(int n)
 {
     // When strobe is high, it keeps reading A:
@@ -78,11 +82,13 @@ void write_joypad_strobe(bool v)
     strobe = v;
 }
 
+/* Draw a pixel at the given coordinates */
 void draw_pixel(unsigned x, unsigned y, u32 rgb)
 {
     pixels[y*width + x] = rgb;
 }
 
+/* Put the pixels on screen */
 void flush_screen()
 {
     SDL_UpdateTexture(texture, NULL, pixels, width * sizeof(u32));

@@ -9,4 +9,4 @@ env = Environment(ENV       = { 'TERM' : environ['TERM'] },
                   LINKFLAGS = flags,
                   LIBS      = ['SDL2'])
 
-env.Program('laines', Glob('src/*.cpp'))
+env.Program('laines', Glob('src/*.cpp') + Glob('src/*/*.cpp'))

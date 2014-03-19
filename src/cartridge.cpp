@@ -6,7 +6,7 @@
 namespace Cartridge {
 
 
-Mapper* mapper;
+Mapper* mapper;  // Mapper chip.
 
 /* PRG-ROM access */
 template <bool wr> u8 access(u16 addr, u8 v)

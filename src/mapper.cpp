@@ -2,6 +2,7 @@
 
 Mapper::Mapper(u8* rom)
 {
+    // Read infos from header:
     prgSize    = rom[4] * 0x4000;
     chrSize    = rom[5] * 0x2000;
     prgRamSize = rom[8] ? rom[8] * 0x2000 : 0x2000;
@@ -9,8 +10,10 @@ Mapper::Mapper(u8* rom)
     this->prg    = rom + 16;
     this->prgRam = new u8[prgRamSize];
 
+    // CHR ROM:
     if (chrSize)
         this->chr = rom + 16 + prgSize;
+    // CHR RAM:
     else
     {
         chrSize = 0x2000;
