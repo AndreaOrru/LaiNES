@@ -39,27 +39,25 @@ u8 Mapper::chr_read(u16 addr)
 }
 
 /* PRG mapping functions */
-void Mapper::map_prg32k(int bank)
+template <int pageKBs> void Mapper::map_prg(int slot, int bank)
 {
-    for (int i = 0; i < 4; i++)
-        prgMap[i] = (0x8000*bank + 0x2000*i) % prgSize;
-}
+    if (bank < 0)
+        bank = (prgSize / (0x400*pageKBs)) + bank;
 
-void Mapper::map_prg16k(int slot, int bank)
-{
-    for (int i = 0; i < 2; i++)
-        prgMap[2*slot + i] = (0x4000*bank + 0x2000*i) % prgSize;
+    for (int i = 0; i < (pageKBs/8); i++)
+        prgMap[(pageKBs/8) * slot + i] = (pageKBs*0x400*bank + 0x2000*i) % prgSize;
 }
+template void Mapper::map_prg<32>(int, int);
+template void Mapper::map_prg<16>(int, int);
+template void Mapper::map_prg<8> (int, int);
 
 /* CHR mapping functions */
-void Mapper::map_chr8k(int bank)
+template <int pageKBs> void Mapper::map_chr(int slot, int bank)
 {
-    for (int i = 0; i < 8; i++)
-        chrMap[i] = (0x2000*bank + 0x400*i) % chrSize;
+    for (int i = 0; i < pageKBs; i++)
+        chrMap[pageKBs*slot + i] = (pageKBs*0x400*bank + 0x400*i) % chrSize;
 }
-
-void Mapper::map_chr4k(int slot, int bank)
-{
-    for (int i = 0; i < 4; i++)
-        chrMap[4*slot + i] = (0x1000*bank + 0x400*i) % chrSize;
-}
+template void Mapper::map_chr<8>(int, int);
+template void Mapper::map_chr<4>(int, int);
+template void Mapper::map_chr<2>(int, int);
+template void Mapper::map_chr<1>(int, int);

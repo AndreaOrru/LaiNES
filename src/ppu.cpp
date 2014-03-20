@@ -310,6 +310,8 @@ template<Scanline s> void scanline_cycle()
             case           338:  nt = rd(addr); break;
             case           340:  nt = rd(addr); if (s == PRE && rendering() && frameOdd) dot++;
         }
+        // Signal scanline to mapper:
+        if (dot == 260) Cartridge::signal_scanline();
     }
 }
 

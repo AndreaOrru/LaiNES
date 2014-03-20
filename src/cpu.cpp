@@ -13,7 +13,7 @@ u8 ram[0x800];
 u8 A, X, Y, S;
 u16 PC;
 Flags P;
-bool nmi;
+bool nmi, irq;
 
 /* Cycle emulation */
 #define T   tick()
@@ -221,7 +221,8 @@ void exec()
     }
 }
 
-void set_nmi() { nmi = true; }
+void set_nmi(bool v) { nmi = v; }
+void set_irq(bool v) { irq = v; }
 
 /* Turn on the CPU */
 void power()
@@ -230,6 +231,7 @@ void power()
     A = X = Y = S = 0x00;
     memset(ram, 0xFF, sizeof(ram));
 
+    nmi = irq = false;
     INT<RESET>();
 }
 
@@ -241,6 +243,7 @@ void run()
         exec();
 
         if (nmi) INT<NMI>();
+        else if (irq and !P[I]) INT<IRQ>();
     }
 }
 

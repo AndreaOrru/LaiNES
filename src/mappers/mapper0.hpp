@@ -7,7 +7,7 @@ class Mapper0 : public Mapper
   public:
     Mapper0(u8* rom) : Mapper(rom)
     {
-        map_prg32k(0);
-        map_chr8k(0);
+        map_prg<32>(0, 0);
+        map_chr<8> (0, 0);
     }
 };

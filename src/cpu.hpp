@@ -21,7 +21,8 @@ class Flags
                      f[D] = NTH_BIT(p, 3); f[V] = NTH_BIT(p, 6); f[N] = NTH_BIT(p, 7); }
 };
 
-void set_nmi();
+void set_nmi(bool v = true);
+void set_irq(bool v = true);
 void power();
 void run();
 

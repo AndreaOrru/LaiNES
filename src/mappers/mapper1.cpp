@@ -5,42 +5,42 @@
 /* Apply the registers state */
 void Mapper1::apply()
 {
-    // Set mirroring:
-    switch (regs[0] & 0b11)
-    {
-        case 2:  set_mirroring(PPU::VERTICAL);   break;
-        case 3:  set_mirroring(PPU::HORIZONTAL); break;
-    }
-
     // 16KB PRG:
     if (regs[0] & 0b1000)
     {
         // 0x8000 swappable, 0xC000 fixed to bank 0x0F:
         if (regs[0] & 0b100)
         {
-            map_prg16k(0, regs[3] & 0xF);
-            map_prg16k(1, 0xF);
+            map_prg<16>(0, regs[3] & 0xF);
+            map_prg<16>(1,           0xF);
         }
         // 0x8000 fixed to bank 0x00, 0xC000 swappable:
         else
         {
-            map_prg16k(0, 0);
-            map_prg16k(1, regs[3] & 0xF);
+            map_prg<16>(0, 0);
+            map_prg<16>(1, regs[3] & 0xF);
         }
     }
     // 32KB PRG:
     else
-        map_prg32k((regs[3] & 0xF) >> 1);
+        map_prg<32>(0, (regs[3] & 0xF) >> 1);
 
     // 4KB CHR:
     if (regs[0] & 0b10000)
     {
-        map_chr4k(0, regs[1]);
-        map_chr4k(1, regs[2]);
+        map_chr<4>(0, regs[1]);
+        map_chr<4>(1, regs[2]);
     }
     // 8KB CHR:
     else
-        map_chr8k(regs[1] >> 1);
+        map_chr<8>(0, regs[1] >> 1);
+
+    // Set mirroring:
+    switch (regs[0] & 0b11)
+    {
+        case 2:  set_mirroring(PPU::VERTICAL);   break;
+        case 3:  set_mirroring(PPU::HORIZONTAL); break;
+    }
 }
 
 u8 Mapper1::write(u16 addr, u8 v)

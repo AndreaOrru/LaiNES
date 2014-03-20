@@ -1,6 +1,7 @@
 #include <cstdio>
 #include "mappers/mapper0.hpp"
 #include "mappers/mapper1.hpp"
+#include "mappers/mapper4.hpp"
 #include "cartridge.hpp"
 
 namespace Cartridge {
@@ -24,6 +25,11 @@ template <bool wr> u8 chr_access(u16 addr, u8 v)
 }
 template u8 chr_access<0>(u16, u8); template u8 chr_access<1>(u16, u8);
 
+void signal_scanline()
+{
+    mapper->signal_scanline();
+}
+
 /* Load the ROM from a file. */
 void load(const char* fileName)
 {
@@ -42,6 +48,7 @@ void load(const char* fileName)
     {
         case 0:  mapper = new Mapper0(rom); break;
         case 1:  mapper = new Mapper1(rom); break;
+        case 4:  mapper = new Mapper4(rom); break;
     }
 }
 

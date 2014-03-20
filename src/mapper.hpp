@@ -12,17 +12,17 @@ class Mapper
     u8 *prg, *chr, *prgRam;
     u32 prgSize, chrSize, prgRamSize;
 
-    void map_prg32k(int bank);
-    void map_prg16k(int slot, int bank);
-    void map_chr8k(int bank);
-    void map_chr4k(int slot, int bank);
+    template <int pageKBs> void map_prg(int slot, int bank);
+    template <int pageKBs> void map_chr(int slot, int bank);
 
   public:
     Mapper(u8* rom);
 
     u8 read(u16 addr);
-    virtual u8 write(u16 addr, u8 v) { return v; };
+    virtual u8 write(u16 addr, u8 v) { return v; }
 
     u8 chr_read(u16 addr);
-    virtual u8 chr_write(u16 addr, u8 v) { return v; };
+    virtual u8 chr_write(u16 addr, u8 v) { return v; }
+
+    virtual void signal_scanline() {}
 };
