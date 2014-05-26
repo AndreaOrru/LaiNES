@@ -14,10 +14,11 @@ u8 A, X, Y, S;
 u16 PC;
 Flags P;
 bool nmi, irq;
+int remaining;
 
 /* Cycle emulation */
 #define T   tick()
-inline void tick() { PPU::step(); PPU::step(); PPU::step(); }
+inline void tick() { PPU::step(); PPU::step(); PPU::step(); remaining--; }
 
 /* Flags updating */
 inline void upd_cv(u8 x, u8 y, s16 r) { P[C] = (r>0xFF); P[V] = ~(x^y) & (x^r) & 0x80; }
@@ -227,6 +228,8 @@ void set_irq(bool v) { irq = v; }
 /* Turn on the CPU */
 void power()
 {
+    remaining = 0;
+
     P.set(0x04);
     A = X = Y = S = 0x00;
     memset(ram, 0xFF, sizeof(ram));
@@ -238,9 +241,9 @@ void power()
 /* Run the CPU for roughly a frame */
 void run_frame()
 {
-    unsigned remaining = 29781;
+    remaining += 29781;
 
-    while (remaining--)
+    while (remaining > 0)
     {
         exec();
 

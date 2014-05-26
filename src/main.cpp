@@ -10,8 +10,7 @@ int main(int argc, char *argv[])
     Cartridge::load(argv[1]);
     CPU::power();
 
-    while(true)
-        CPU::run_frame();
+    GUI::run();
 
     return 0;
 }

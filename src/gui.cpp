@@ -1,5 +1,6 @@
 #include <csignal>
 #include <SDL2/SDL.h>
+#include "cpu.hpp"
 #include "gui.hpp"
 
 namespace GUI {
@@ -25,7 +26,7 @@ void init()
                                   width, height, 0);
 
     renderer = SDL_CreateRenderer(window, -1,
-                                  SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+                                  SDL_RENDERER_ACCELERATED);
 
     texture  = SDL_CreateTexture (renderer,
                                   SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
@@ -59,9 +60,32 @@ u8 get_joypad_state(int n)
 void new_frame(u32* pixels)
 {
     SDL_UpdateTexture(texture, NULL, pixels, width * sizeof(u32));
+}
+
+void render()
+{
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
+}
+
+void run()
+{
+    u32 frameStart, frameTime;
+    const int fps   = 60;
+    const int delay = 1000.0f / fps;
+
+    while(true)
+    {
+        frameStart = SDL_GetTicks();
+
+        CPU::run_frame();
+        render();
+
+        frameTime = SDL_GetTicks() - frameStart;
+        if (frameTime < delay)
+            SDL_Delay((int)(delay - frameTime));
+    }
 }
 
 
