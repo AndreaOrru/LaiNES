@@ -1,42 +1,70 @@
 #include <csignal>
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include "cpu.hpp"
+#include "menu.hpp"
 #include "gui.hpp"
 
 namespace GUI {
 
 
-// Screen size:
-const unsigned width  = 256;
-const unsigned height = 240;
-
 // SDL structures:
 SDL_Window* window;
 SDL_Renderer* renderer;
-SDL_Texture* texture;
+SDL_Texture* gameTexture;
+TTF_Font* font;
 u8 const* keys;
 
 // Status:
 bool pause = false;
+Menu* menu;
 
-/* Initialize SDL */
+/* Initialize GUI */
 void init()
 {
     SDL_Init(SDL_INIT_VIDEO);
+    TTF_Init();
 
-    window   = SDL_CreateWindow  ("LaiNES",
-                                  SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                  width, height, 0);
+    window      = SDL_CreateWindow  ("LaiNES",
+                                     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                     width, height, 0);
 
-    renderer = SDL_CreateRenderer(window, -1,
-                                  SDL_RENDERER_ACCELERATED);
+    renderer    = SDL_CreateRenderer(window, -1,
+                                     SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    texture  = SDL_CreateTexture (renderer,
-                                  SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
-                                  width, height);
+    gameTexture = SDL_CreateTexture (renderer,
+                                     SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
+                                     width, height);
+
+    font        = TTF_OpenFont("res/font.ttf", fontPt);
 
     keys = SDL_GetKeyboardState(0);
     signal(SIGINT, SIG_DFL);
+
+    menu = new Menu({ "Load ROM",
+                      "Settings",
+                      "Exit" });
+}
+
+/* Render a texture on screen (-1 to center on an axis) */
+void render_texture(SDL_Texture* texture, int x, int y)
+{
+    int w, h;
+    SDL_Rect dest;
+
+    SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
+    dest.x = (x < 0) ? ((width  / 2) - (dest.w / 2)) : x;
+    dest.y = (y < 0) ? ((height / 2) - (dest.h / 2)) : y;
+    SDL_RenderCopy(renderer, texture, NULL, &dest);
+}
+
+/* Generate a texture from text */
+SDL_Texture* gen_text(std::string text, SDL_Color color)
+{
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    SDL_FreeSurface(surface);
+    return texture;
 }
 
 /* Get the joypad state from SDL */
@@ -60,14 +88,24 @@ u8 get_joypad_state(int n)
 /* Send the rendered frame to the GUI */
 void new_frame(u32* pixels)
 {
-    SDL_UpdateTexture(texture, NULL, pixels, width * sizeof(u32));
+    SDL_UpdateTexture(gameTexture, NULL, pixels, width * sizeof(u32));
 }
 
-/* Actually render the frame */
+/* Render the screen */
 void render()
 {
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
+
+    // Draw the NES screen:
+    if (pause)
+        SDL_SetTextureColorMod(gameTexture,  40,  40,  40);
+    else
+        SDL_SetTextureColorMod(gameTexture, 255, 255, 255);
+    SDL_RenderCopy(renderer, gameTexture, NULL, NULL);
+
+    // Draw the menu:
+    if (pause) menu->render();
+
     SDL_RenderPresent(renderer);
 }
 
@@ -89,17 +127,11 @@ void run()
         while (SDL_PollEvent(&e))
             switch (e.type)
             {
-                case SDL_QUIT:  return;
+                case SDL_QUIT: return;
                 case SDL_KEYDOWN:
                     if (keys[SDL_SCANCODE_ESCAPE])
-                    {
                         pause = not pause;
-
-                        if (pause)
-                            SDL_SetTextureColorMod(texture,  48,  48,  48);
-                        else
-                            SDL_SetTextureColorMod(texture, 255, 255, 255);
-                    }
+                    else if (pause) menu->update(keys);
             }
 
         if (not pause) CPU::run_frame();
