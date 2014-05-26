@@ -16,6 +16,9 @@ SDL_Renderer* renderer;
 SDL_Texture* texture;
 u8 const* keys;
 
+// Status:
+bool pause = false;
+
 /* Initialize SDL */
 void init()
 {
@@ -84,11 +87,23 @@ void run()
 
         // Handle events:
         while (SDL_PollEvent(&e))
-            if (e.type == SDL_QUIT)
-                return;
+            switch (e.type)
+            {
+                case SDL_QUIT:  return;
+                case SDL_KEYDOWN:
+                    if (keys[SDL_SCANCODE_ESCAPE])
+                    {
+                        pause = not pause;
 
-        CPU::run_frame();  // Update state.
-        render();          // Render.
+                        if (pause)
+                            SDL_SetTextureColorMod(texture,  48,  48,  48);
+                        else
+                            SDL_SetTextureColorMod(texture, 255, 255, 255);
+                    }
+            }
+
+        if (not pause) CPU::run_frame();
+        render();
 
         // Wait to mantain framerate:
         frameTime = SDL_GetTicks() - frameStart;
