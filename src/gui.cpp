@@ -15,8 +15,6 @@ SDL_Renderer* renderer;
 SDL_Texture* texture;
 u8 const* keys;
 
-u32 pixels[width * height];  // Video buffer.
-
 /* Initialize SDL */
 void init()
 {
@@ -37,8 +35,8 @@ void init()
     signal(SIGINT, SIG_DFL);
 }
 
-/* Get the keys state from SDL */
-u8 get_keys_state(int n)
+/* Get the joypad state from SDL */
+u8 get_joypad_state(int n)
 {
     u8 j = 0;
     SDL_PumpEvents();
@@ -57,14 +55,8 @@ u8 get_keys_state(int n)
     return j;
 }
 
-/* Draw a pixel at the given coordinates */
-void draw_pixel(unsigned x, unsigned y, u32 rgb)
-{
-    pixels[y*width + x] = rgb;
-}
-
-/* Put the pixels on screen */
-void flush_screen()
+/* Send the rendered frame to the GUI */
+void new_frame(u32* pixels)
 {
     SDL_UpdateTexture(texture, NULL, pixels, width * sizeof(u32));
     SDL_RenderClear(renderer);

@@ -12,6 +12,7 @@ u8 ciRam[0x800];           // VRAM for nametables.
 u8 cgRam[0x20];            // VRAM for palettes.
 u8 oamMem[0x100];          // VRAM for sprite properties.
 Sprite oam[8], secOam[8];  // Sprite buffers.
+u32 pixels[256 * 240];     // Video buffer.
 
 Addr vAddr, tAddr;  // Loopy V, T.
 u8 fX;              // Fine X.
@@ -254,7 +255,7 @@ void pixel()
         // Evaluate priority:
         if (objPalette && (palette == 0 || objPriority == 0)) palette = objPalette;
 
-        GUI::draw_pixel(x, scanline, nesRgb[rd(0x3F00 + (rendering() ? palette : 0))]);
+        pixels[scanline*256 + x] = nesRgb[rd(0x3F00 + (rendering() ? palette : 0))];
     }
     // Perform background shifts:
     bgShiftL <<= 1; bgShiftH <<= 1;
@@ -268,7 +269,7 @@ template<Scanline s> void scanline_cycle()
     static u16 addr;
 
     if (s == NMI and dot == 1) { status.vBlank = true; if (ctrl.nmi) CPU::set_nmi(); }
-    else if (s == POST and dot == 0) GUI::flush_screen();
+    else if (s == POST and dot == 0) GUI::new_frame(pixels);
     else if (s == VISIBLE or s == PRE)
     {
         // Sprites:

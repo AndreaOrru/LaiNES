@@ -235,10 +235,12 @@ void power()
     INT<RESET>();
 }
 
-/* Start the execution */
-void run()
+/* Run the CPU for roughly a frame */
+void run_frame()
 {
-    while (true)
+    unsigned remaining = 29781;
+
+    while (remaining--)
     {
         exec();
 

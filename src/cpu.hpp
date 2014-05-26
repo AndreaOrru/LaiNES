@@ -24,7 +24,7 @@ class Flags
 void set_nmi(bool v = true);
 void set_irq(bool v = true);
 void power();
-void run();
+void run_frame();
 
 
 }
