@@ -40,8 +40,6 @@ void init()
 u8 get_joypad_state(int n)
 {
     u8 j = 0;
-    SDL_PumpEvents();
-
     if (n == 0)
     {
         j |= (keys[SDL_SCANCODE_A])      << 0;  // A.
@@ -62,6 +60,7 @@ void new_frame(u32* pixels)
     SDL_UpdateTexture(texture, NULL, pixels, width * sizeof(u32));
 }
 
+/* Actually render the frame */
 void render()
 {
     SDL_RenderClear(renderer);
@@ -69,8 +68,12 @@ void render()
     SDL_RenderPresent(renderer);
 }
 
+/* Run the emulator */
 void run()
 {
+    SDL_Event e;
+
+    // Framerate control:
     u32 frameStart, frameTime;
     const int fps   = 60;
     const int delay = 1000.0f / fps;
@@ -79,9 +82,15 @@ void run()
     {
         frameStart = SDL_GetTicks();
 
-        CPU::run_frame();
-        render();
+        // Handle events:
+        while (SDL_PollEvent(&e))
+            if (e.type == SDL_QUIT)
+                return;
 
+        CPU::run_frame();  // Update state.
+        render();          // Render.
+
+        // Wait to mantain framerate:
         frameTime = SDL_GetTicks() - frameStart;
         if (frameTime < delay)
             SDL_Delay((int)(delay - frameTime));

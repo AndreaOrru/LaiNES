@@ -14,11 +14,14 @@ u8 A, X, Y, S;
 u16 PC;
 Flags P;
 bool nmi, irq;
-int remaining;
+
+// Remaining clocks to end frame:
+const int clocks_per_frame = 29781;
+int clocks;
 
 /* Cycle emulation */
 #define T   tick()
-inline void tick() { PPU::step(); PPU::step(); PPU::step(); remaining--; }
+inline void tick() { PPU::step(); PPU::step(); PPU::step(); clocks--; }
 
 /* Flags updating */
 inline void upd_cv(u8 x, u8 y, s16 r) { P[C] = (r>0xFF); P[V] = ~(x^y) & (x^r) & 0x80; }
@@ -228,7 +231,7 @@ void set_irq(bool v) { irq = v; }
 /* Turn on the CPU */
 void power()
 {
-    remaining = 0;
+    clocks = 0;
 
     P.set(0x04);
     A = X = Y = S = 0x00;
@@ -241,14 +244,14 @@ void power()
 /* Run the CPU for roughly a frame */
 void run_frame()
 {
-    remaining += 29781;
+    clocks += clocks_per_frame;
 
-    while (remaining > 0)
+    while (clocks > 0)
     {
-        exec();
-
         if (nmi) INT<NMI>();
         else if (irq and !P[I]) INT<IRQ>();
+
+        exec();
     }
 }
 
