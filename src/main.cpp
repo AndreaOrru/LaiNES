@@ -1,12 +1,12 @@
 #include "cartridge.hpp"
 #include "cpu.hpp"
-#include "io.hpp"
+#include "gui.hpp"
 #include "ppu.hpp"
 
 
 int main(int argc, char *argv[])
 {
-    IO::init();
+    GUI::init();
     Cartridge::load(argv[1]);
     CPU::power();
 

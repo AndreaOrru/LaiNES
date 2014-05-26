@@ -1,12 +1,11 @@
 #pragma once
 #include "common.hpp"
 
-namespace IO {
+namespace GUI {
 
 
 void init();
-u8 read_joypad(int n);
-void write_joypad_strobe(bool v);
+u8 get_keys_state(int n);
 void draw_pixel(unsigned x, unsigned y, u32 rgb);
 void flush_screen();
 

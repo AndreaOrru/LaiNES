@@ -1,8 +1,8 @@
 #include <csignal>
 #include <SDL2/SDL.h>
-#include "io.hpp"
+#include "gui.hpp"
 
-namespace IO {
+namespace GUI {
 
 
 // Screen size:
@@ -16,8 +16,6 @@ SDL_Texture* texture;
 u8 const* keys;
 
 u32 pixels[width * height];  // Video buffer.
-u8 joypad_bits[2];  // Joypad shift registers.
-bool strobe;        // Joypad strobe latch.
 
 /* Initialize SDL */
 void init()
@@ -39,8 +37,8 @@ void init()
     signal(SIGINT, SIG_DFL);
 }
 
-/* Get the joypad state from SDL */
-u8 get_joypad_state(int n)
+/* Get the keys state from SDL */
+u8 get_keys_state(int n)
 {
     u8 j = 0;
     SDL_PumpEvents();
@@ -57,29 +55,6 @@ u8 get_joypad_state(int n)
         j |= (keys[SDL_SCANCODE_RIGHT])  << 7;  // Right.
     }
     return j;
-}
-
-/* Read joypad state (NES register format) */
-u8 read_joypad(int n)
-{
-    // When strobe is high, it keeps reading A:
-    if (strobe)
-        return 0x40 | (get_joypad_state(n) & 1);
-
-    // Get the status of a button and shift the register:
-    u8 j = 0x40 | (joypad_bits[n] & 1);
-    joypad_bits[n] = 0x80 | (joypad_bits[n] >> 1);
-    return j;
-}
-
-void write_joypad_strobe(bool v)
-{
-    // Read the joypad data on strobe's transition 1 -> 0.
-    if (strobe and !v)
-        for (int i = 0; i < 2; i++)
-            joypad_bits[i] = get_joypad_state(i);
-
-    strobe = v;
 }
 
 /* Draw a pixel at the given coordinates */
