@@ -51,7 +51,7 @@ void init()
     mainMenu.add("Load ROM", []{ menu = fileMenu->reset(); });
     mainMenu.add("Settings", []{ menu = settingsMenu.reset(); });
     mainMenu.add("Exit"    , []{ exit(0); });
-    settingsMenu.add("<-", []{ menu = mainMenu.reset(); });
+    settingsMenu.add("<",    []{ menu = mainMenu.reset(); });
     settingsMenu.add("Controls");
     settingsMenu.add("Video");
     fileMenu = new FileMenu;
@@ -122,6 +122,7 @@ void render()
     SDL_RenderPresent(renderer);
 }
 
+/* Play/stop the game */
 void toggle_pause()
 {
     pause = not pause;
