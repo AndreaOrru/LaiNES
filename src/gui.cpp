@@ -1,5 +1,6 @@
 #include <csignal>
 #include <SDL2/SDL_ttf.h>
+#include "cartridge.hpp"
 #include "cpu.hpp"
 #include "menu.hpp"
 #include "gui.hpp"
@@ -14,16 +15,22 @@ SDL_Texture* gameTexture;
 TTF_Font* font;
 u8 const* keys;
 
-// Status:
-bool pause = false;
+// Menus:
 Menu* menu;
+Menu mainMenu;
+Menu settingsMenu;
+FileMenu* fileMenu;
+
+bool pause = true;
 
 /* Initialize GUI */
 void init()
 {
+    // Initialize graphics system:
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
+    // Initialize graphics structures:
     window      = SDL_CreateWindow  ("LaiNES",
                                      SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                      width, height, 0);
@@ -38,11 +45,17 @@ void init()
     font        = TTF_OpenFont("res/font.ttf", fontPt);
 
     keys = SDL_GetKeyboardState(0);
-    signal(SIGINT, SIG_DFL);
+    signal(SIGINT, SIG_DFL);  // CTRL+C kills the application.
 
-    menu = new Menu({ "Load ROM",
-                      "Settings",
-                      "Exit" });
+    // Menus:
+    mainMenu.add("Load ROM", []{ menu = fileMenu->reset(); });
+    mainMenu.add("Settings", []{ menu = settingsMenu.reset(); });
+    mainMenu.add("Exit"    , []{ exit(0); });
+    settingsMenu.add("<-", []{ menu = mainMenu.reset(); });
+    settingsMenu.add("Controls");
+    settingsMenu.add("Video");
+    fileMenu = new FileMenu;
+    menu = &mainMenu;
 }
 
 /* Render a texture on screen (-1 to center on an axis) */
@@ -109,6 +122,12 @@ void render()
     SDL_RenderPresent(renderer);
 }
 
+void toggle_pause()
+{
+    pause = not pause;
+    menu  = mainMenu.reset();
+}
+
 /* Run the emulator */
 void run()
 {
@@ -129,10 +148,12 @@ void run()
             {
                 case SDL_QUIT: return;
                 case SDL_KEYDOWN:
-                    if (keys[SDL_SCANCODE_ESCAPE])
-                        pause = not pause;
-                    else if (pause) menu->update(keys);
+                    if (keys[SDL_SCANCODE_ESCAPE] and Cartridge::loaded())
+                        toggle_pause();
+                    else if (pause)
+                        menu->update(keys);
             }
+
 
         if (not pause) CPU::run_frame();
         render();

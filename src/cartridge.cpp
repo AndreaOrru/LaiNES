@@ -1,4 +1,5 @@
 #include <cstdio>
+#include "cpu.hpp"
 #include "mappers/mapper0.hpp"
 #include "mappers/mapper1.hpp"
 #include "mappers/mapper4.hpp"
@@ -7,7 +8,7 @@
 namespace Cartridge {
 
 
-Mapper* mapper;  // Mapper chip.
+Mapper* mapper = nullptr;  // Mapper chip.
 
 /* PRG-ROM access */
 template <bool wr> u8 access(u16 addr, u8 v)
@@ -50,6 +51,13 @@ void load(const char* fileName)
         case 1:  mapper = new Mapper1(rom); break;
         case 4:  mapper = new Mapper4(rom); break;
     }
+
+    CPU::power();
+}
+
+bool loaded()
+{
+    return mapper != nullptr;
 }
 
 

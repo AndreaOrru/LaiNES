@@ -12,6 +12,7 @@ const unsigned height = 240;
 const unsigned fontPt = 16;   // Font size.
 
 void init();
+void toggle_pause();
 void run();
 
 SDL_Texture* gen_text(std::string text, SDL_Color color);
