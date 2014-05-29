@@ -17,6 +17,7 @@ const unsigned fontSz = 16;
 SDL_Window* window;
 SDL_Renderer* renderer;
 SDL_Texture* gameTexture;
+SDL_Texture* background;
 TTF_Font* font;
 u8 const* keys;
 
@@ -65,6 +66,12 @@ void init()
                                      width, height);
 
     font        = TTF_OpenFont("res/font.ttf", fontSz);
+
+    // Initial background:
+    SDL_Surface* backSurface  = SDL_LoadBMP("res/init.bmp");
+    background = SDL_CreateTextureFromSurface(renderer, backSurface);
+    SDL_SetTextureColorMod(background, 55, 55, 55);
+    SDL_FreeSurface(backSurface);
 
     keys = SDL_GetKeyboardState(0);
     signal(SIGINT, SIG_DFL);  // CTRL+C kills the application.
@@ -140,11 +147,10 @@ void render()
     SDL_RenderClear(renderer);
 
     // Draw the NES screen:
-    if (pause)
-        SDL_SetTextureColorMod(gameTexture,  40,  40,  40);
+    if (Cartridge::loaded())
+        SDL_RenderCopy(renderer, gameTexture, NULL, NULL);
     else
-        SDL_SetTextureColorMod(gameTexture, 255, 255, 255);
-    SDL_RenderCopy(renderer, gameTexture, NULL, NULL);
+        SDL_RenderCopy(renderer, background, NULL, NULL);
 
     // Draw the menu:
     if (pause) menu->render();
@@ -157,6 +163,11 @@ void toggle_pause()
 {
     pause = not pause;
     menu  = mainMenu.reset();
+
+    if (pause)
+        SDL_SetTextureColorMod(gameTexture,  40,  40,  40);
+    else
+        SDL_SetTextureColorMod(gameTexture, 255, 255, 255);
 }
 
 /* Run the emulator */
