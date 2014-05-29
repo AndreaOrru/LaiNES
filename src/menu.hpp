@@ -21,7 +21,6 @@ struct MenuEntry
 
     MenuEntry(std::string label, std::function<void()> callback, int x);
     ~MenuEntry();
-    void regen();
 };
 
 class Menu
@@ -34,8 +33,6 @@ class Menu
     void add(std::string label, std::function<void()> callback = []{}, int x = -1);
     void update(u8 const* keys);
     void render();
-    void regen();
-    virtual Menu* reset();
 };
 
 class FileMenu : public Menu
@@ -43,7 +40,6 @@ class FileMenu : public Menu
     void change_dir(std::string dir);
 
   public:
-    Menu* reset();
     FileMenu();
 };
 

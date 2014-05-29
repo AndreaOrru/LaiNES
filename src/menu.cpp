@@ -24,14 +24,6 @@ MenuEntry::~MenuEntry()
     SDL_DestroyTexture(selected);
 }
 
-void MenuEntry::regen()
-{
-    SDL_DestroyTexture(unselected);
-    SDL_DestroyTexture(selected);
-    unselected = gen_text(label, white);
-    selected   = gen_text(label, red);
-}
-
 
 void Menu::add(string label, function<void()> callback, int x)
 {
@@ -50,23 +42,9 @@ void Menu::update(u8 const* keys)
 
 void Menu::render()
 {
-    int h; SDL_QueryTexture(entries[0]->selected, NULL, NULL, NULL, &h);
-
     for (int i = 0; i < entries.size(); i++)
-        render_texture(entries[i]->unselected, entries[i]->x, i * h);
-    render_texture(entries[cursor]->selected, entries[cursor]->x, cursor * h);
-}
-
-void Menu::regen()
-{
-    for (auto entry : entries)
-        entry->regen();
-}
-
-Menu* Menu::reset()
-{
-    cursor = 0;
-    return this;
+        render_texture(entries[i]->unselected, entries[i]->x, i * fontSz);
+    render_texture(entries[cursor]->selected, entries[cursor]->x, cursor * fontSz);
 }
 
 
@@ -94,15 +72,9 @@ void FileMenu::change_dir(string dir)
     closedir(dp);
 }
 
-Menu* FileMenu::reset()
-{
-    change_dir(getwd(NULL));
-    return this;
-}
-
 FileMenu::FileMenu()
 {
-    reset();
+    change_dir(getwd(NULL));
 }
 
 

@@ -6,6 +6,8 @@
 namespace GUI {
 
 
+const unsigned fontSz = 16;
+
 void init();
 void toggle_pause();
 void run();

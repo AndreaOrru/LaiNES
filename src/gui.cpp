@@ -11,7 +11,6 @@ namespace GUI {
 // Screen size:
 const unsigned width  = 256;
 const unsigned height = 240;
-const unsigned fontSz = 16;
 
 // SDL structures:
 SDL_Window* window;
@@ -30,20 +29,11 @@ FileMenu* fileMenu;
 
 bool pause = true;
 
-/* Change the size of the window */
+
 void set_size(int mul)
 {
-    // Generate a new font:
-    TTF_CloseFont(font);
-    font = TTF_OpenFont("res/font.ttf", fontSz * mul);
-
-    // Set the new size:
-    SDL_SetWindowSize(window, 256 * mul, 240 * mul);
-
-    // Regenerate the menu entries:
-    mainMenu.regen();
-    settingsMenu.regen();
-    videoMenu.regen();
+    SDL_SetWindowSize(window, width * mul, height * mul);
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
 /* Initialize GUI */
@@ -51,6 +41,7 @@ void init()
 {
     // Initialize graphics system:
     SDL_Init(SDL_INIT_VIDEO);
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
     TTF_Init();
 
     // Initialize graphics structures:
@@ -60,30 +51,29 @@ void init()
 
     renderer    = SDL_CreateRenderer(window, -1,
                                      SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_RenderSetLogicalSize(renderer, width, height);
 
     gameTexture = SDL_CreateTexture (renderer,
                                      SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
                                      width, height);
 
-    font        = TTF_OpenFont("res/font.ttf", fontSz);
+    font = TTF_OpenFont("res/font.ttf", fontSz);
+    keys = SDL_GetKeyboardState(0);
 
     // Initial background:
     SDL_Surface* backSurface  = SDL_LoadBMP("res/init.bmp");
     background = SDL_CreateTextureFromSurface(renderer, backSurface);
-    SDL_SetTextureColorMod(background, 55, 55, 55);
+    SDL_SetTextureColorMod(background, 60, 60, 60);
     SDL_FreeSurface(backSurface);
 
-    keys = SDL_GetKeyboardState(0);
-    signal(SIGINT, SIG_DFL);  // CTRL+C kills the application.
-
     // Menus:
-    mainMenu.add    ("Load ROM",  []{ menu = fileMenu->reset(); });
-    mainMenu.add    ("Settings",  []{ menu = settingsMenu.reset(); });
+    mainMenu.add    ("Load ROM",  []{ menu = fileMenu; });
+    mainMenu.add    ("Settings",  []{ menu = &settingsMenu; });
     mainMenu.add    ("Exit",      []{ exit(0); });
-    settingsMenu.add("<",         []{ menu = mainMenu.reset(); });
-    settingsMenu.add("Video",     []{ menu = videoMenu.reset(); });
+    settingsMenu.add("<",         []{ menu = &mainMenu; });
+    settingsMenu.add("Video",     []{ menu = &videoMenu; });
     settingsMenu.add("Controls");
-    videoMenu.add   ("<",         []{ menu = settingsMenu.reset(); });
+    videoMenu.add   ("<",         []{ menu = &settingsMenu; });
     videoMenu.add   ("Size 1x",   []{ set_size(1); });
     videoMenu.add   ("Size 2x",   []{ set_size(2); });
     videoMenu.add   ("Size 3x",   []{ set_size(3); });
@@ -95,15 +85,11 @@ void init()
 void render_texture(SDL_Texture* texture, int x, int y)
 {
     int w, h;
-    int winW, winH;
     SDL_Rect dest;
 
-    SDL_GetWindowSize(window, &winW, &winH);
     SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
-
-    dest.x = (x < 0) ? ((winW / 2) - (dest.w / 2)) : x;
-    dest.y = (y < 0) ? ((winH / 2) - (dest.h / 2)) : y;
-
+    dest.x = (x < 0) ? ((width  / 2) - (dest.w / 2)) : x;
+    dest.y = (y < 0) ? ((height / 2) - (dest.h / 2)) : y;
     SDL_RenderCopy(renderer, texture, NULL, &dest);
 }
 
@@ -162,7 +148,7 @@ void render()
 void toggle_pause()
 {
     pause = not pause;
-    menu  = mainMenu.reset();
+    menu  = &mainMenu;
 
     if (pause)
         SDL_SetTextureColorMod(gameTexture,  40,  40,  40);
@@ -180,7 +166,7 @@ void run()
     const int fps   = 60;
     const int delay = 1000.0f / fps;
 
-    while(true)
+    while (true)
     {
         frameStart = SDL_GetTicks();
 
