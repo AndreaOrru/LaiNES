@@ -6,11 +6,6 @@
 namespace GUI {
 
 
-// Screen size:
-const unsigned width  = 256;
-const unsigned height = 240;
-const unsigned fontPt = 16;   // Font size.
-
 void init();
 void toggle_pause();
 void run();

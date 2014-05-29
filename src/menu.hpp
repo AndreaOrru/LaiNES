@@ -12,14 +12,16 @@ struct MenuEntry
     SDL_Color white = { 255, 255, 255 };
     SDL_Color red   = { 255,   0,   0 };
 
+    int x;
     std::string label;
     std::function<void()> callback;
 
     SDL_Texture* selected;
     SDL_Texture* unselected;
 
-    MenuEntry(std::string label, std::function<void()> callback);
+    MenuEntry(std::string label, std::function<void()> callback, int x);
     ~MenuEntry();
+    void regen();
 };
 
 class Menu
@@ -29,9 +31,10 @@ class Menu
     int cursor = 0;
 
   public:
-    void add(std::string label, std::function<void()> callback = []{});
+    void add(std::string label, std::function<void()> callback = []{}, int x = -1);
     void update(u8 const* keys);
-    virtual void render();
+    void render();
+    void regen();
     virtual Menu* reset();
 };
 
@@ -40,7 +43,6 @@ class FileMenu : public Menu
     void change_dir(std::string dir);
 
   public:
-    void render();
     Menu* reset();
     FileMenu();
 };

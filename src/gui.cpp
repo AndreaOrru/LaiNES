@@ -8,6 +8,11 @@
 namespace GUI {
 
 
+// Screen size:
+const unsigned width  = 256;
+const unsigned height = 240;
+const unsigned fontSz = 16;
+
 // SDL structures:
 SDL_Window* window;
 SDL_Renderer* renderer;
@@ -19,9 +24,26 @@ u8 const* keys;
 Menu* menu;
 Menu mainMenu;
 Menu settingsMenu;
+Menu videoMenu;
 FileMenu* fileMenu;
 
 bool pause = true;
+
+/* Change the size of the window */
+void set_size(int mul)
+{
+    // Generate a new font:
+    TTF_CloseFont(font);
+    font = TTF_OpenFont("res/font.ttf", fontSz * mul);
+
+    // Set the new size:
+    SDL_SetWindowSize(window, 256 * mul, 240 * mul);
+
+    // Regenerate the menu entries:
+    mainMenu.regen();
+    settingsMenu.regen();
+    videoMenu.regen();
+}
 
 /* Initialize GUI */
 void init()
@@ -42,18 +64,22 @@ void init()
                                      SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
                                      width, height);
 
-    font        = TTF_OpenFont("res/font.ttf", fontPt);
+    font        = TTF_OpenFont("res/font.ttf", fontSz);
 
     keys = SDL_GetKeyboardState(0);
     signal(SIGINT, SIG_DFL);  // CTRL+C kills the application.
 
     // Menus:
-    mainMenu.add("Load ROM", []{ menu = fileMenu->reset(); });
-    mainMenu.add("Settings", []{ menu = settingsMenu.reset(); });
-    mainMenu.add("Exit"    , []{ exit(0); });
-    settingsMenu.add("<",    []{ menu = mainMenu.reset(); });
+    mainMenu.add    ("Load ROM",  []{ menu = fileMenu->reset(); });
+    mainMenu.add    ("Settings",  []{ menu = settingsMenu.reset(); });
+    mainMenu.add    ("Exit",      []{ exit(0); });
+    settingsMenu.add("<",         []{ menu = mainMenu.reset(); });
+    settingsMenu.add("Video",     []{ menu = videoMenu.reset(); });
     settingsMenu.add("Controls");
-    settingsMenu.add("Video");
+    videoMenu.add   ("<",         []{ menu = settingsMenu.reset(); });
+    videoMenu.add   ("Size 1x",   []{ set_size(1); });
+    videoMenu.add   ("Size 2x",   []{ set_size(2); });
+    videoMenu.add   ("Size 3x",   []{ set_size(3); });
     fileMenu = new FileMenu;
     menu = &mainMenu;
 }
@@ -62,11 +88,15 @@ void init()
 void render_texture(SDL_Texture* texture, int x, int y)
 {
     int w, h;
+    int winW, winH;
     SDL_Rect dest;
 
+    SDL_GetWindowSize(window, &winW, &winH);
     SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
-    dest.x = (x < 0) ? ((width  / 2) - (dest.w / 2)) : x;
-    dest.y = (y < 0) ? ((height / 2) - (dest.h / 2)) : y;
+
+    dest.x = (x < 0) ? ((winW / 2) - (dest.w / 2)) : x;
+    dest.y = (y < 0) ? ((winH / 2) - (dest.h / 2)) : y;
+
     SDL_RenderCopy(renderer, texture, NULL, &dest);
 }
 

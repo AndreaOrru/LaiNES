@@ -9,23 +9,33 @@ namespace GUI {
 using namespace std;
 
 
-MenuEntry::MenuEntry(string label, function<void()> callback)
+MenuEntry::MenuEntry(string label, function<void()> callback, int x)
 {
     this->label = label;
     this->callback = callback;
+    this->x = x;
     unselected = gen_text(label, white);
     selected   = gen_text(label, red);
 }
 
 MenuEntry::~MenuEntry()
 {
-    SDL_DestroyTexture(selected);
     SDL_DestroyTexture(unselected);
+    SDL_DestroyTexture(selected);
 }
 
-void Menu::add(string label, function<void()> callback)
+void MenuEntry::regen()
 {
-    entries.push_back(new MenuEntry(label, callback));
+    SDL_DestroyTexture(unselected);
+    SDL_DestroyTexture(selected);
+    unselected = gen_text(label, white);
+    selected   = gen_text(label, red);
+}
+
+
+void Menu::add(string label, function<void()> callback, int x)
+{
+    entries.push_back(new MenuEntry(label, callback, x));
 }
 
 void Menu::update(u8 const* keys)
@@ -40,9 +50,17 @@ void Menu::update(u8 const* keys)
 
 void Menu::render()
 {
+    int h; SDL_QueryTexture(entries[0]->selected, NULL, NULL, NULL, &h);
+
     for (int i = 0; i < entries.size(); i++)
-        render_texture(entries[i]->unselected, -1, i * fontPt);
-    render_texture(entries[cursor]->selected, -1, cursor * fontPt);
+        render_texture(entries[i]->unselected, entries[i]->x, i * h);
+    render_texture(entries[cursor]->selected, entries[cursor]->x, cursor * h);
+}
+
+void Menu::regen()
+{
+    for (auto entry : entries)
+        entry->regen();
 }
 
 Menu* Menu::reset()
@@ -69,18 +87,11 @@ void FileMenu::change_dir(string dir)
 
         if (name[0] == '.' and name != "..") continue;
         if (dirp->d_type == DT_DIR)
-            add(name + "/", [=]{ change_dir(path); });
-        else
-            add(name, [=]{ Cartridge::load(path.c_str()); toggle_pause(); });
+            add(name + "/", [=]{ change_dir(path); }, 10);
+        else if (name.size() > 4 and name.substr(name.size() - 4) == ".nes")
+            add(name, [=]{ Cartridge::load(path.c_str()); toggle_pause(); }, 10);
     }
     closedir(dp);
-}
-
-void FileMenu::render()
-{
-    for (int i = 0; i < entries.size(); i++)
-        render_texture(entries[i]->unselected, 10, i * fontPt);
-    render_texture(entries[cursor]->selected, 10, cursor * fontPt);
 }
 
 Menu* FileMenu::reset()
