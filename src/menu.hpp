@@ -7,30 +7,40 @@
 namespace GUI {
 
 
-struct MenuEntry
+class Entry
 {
-    SDL_Color white = { 255, 255, 255 };
-    SDL_Color red   = { 255,   0,   0 };
+    int x, y;
 
-    int x;
     std::string label;
     std::function<void()> callback;
 
-    SDL_Texture* selected;
-    SDL_Texture* unselected;
+    bool selected = false;
+    SDL_Texture* whiteTexture;
+    SDL_Texture* redTexture;
 
-    MenuEntry(std::string label, std::function<void()> callback, int x);
-    ~MenuEntry();
+  public:
+    Entry(std::string label, std::function<void()> callback = []{}, int x = -1, int y = -1);
+    ~Entry();
+
+    void setX(int x) { this->x = x; }
+    void setY(int y) { this->y = y; }
+    int getX() { return x; }
+    int getY() { return y; }
+
+    void select()   { selected = true;  };
+    void unselect() { selected = false; };
+    void trigger()  { callback(); };
+    virtual void render();
 };
 
 class Menu
 {
-  protected:
-    std::vector<MenuEntry*> entries;
+    std::vector<Entry*> entries;
     int cursor = 0;
 
   public:
-    void add(std::string label, std::function<void()> callback = []{}, int x = -1);
+    void add(Entry* entry);
+    void clear();
     void update(u8 const* keys);
     void render();
 };

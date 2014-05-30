@@ -22,14 +22,15 @@ u8 const* keys;
 
 // Menus:
 Menu* menu;
-Menu mainMenu;
-Menu settingsMenu;
-Menu videoMenu;
+Menu* mainMenu;
+Menu* settingsMenu;
+Menu* videoMenu;
 FileMenu* fileMenu;
 
 bool pause = true;
 
 
+/* Set the window size multiplier */
 void set_size(int mul)
 {
     SDL_SetWindowSize(window, width * mul, height * mul);
@@ -67,18 +68,25 @@ void init()
     SDL_FreeSurface(backSurface);
 
     // Menus:
-    mainMenu.add    ("Load ROM",  []{ menu = fileMenu; });
-    mainMenu.add    ("Settings",  []{ menu = &settingsMenu; });
-    mainMenu.add    ("Exit",      []{ exit(0); });
-    settingsMenu.add("<",         []{ menu = &mainMenu; });
-    settingsMenu.add("Video",     []{ menu = &videoMenu; });
-    settingsMenu.add("Controls");
-    videoMenu.add   ("<",         []{ menu = &settingsMenu; });
-    videoMenu.add   ("Size 1x",   []{ set_size(1); });
-    videoMenu.add   ("Size 2x",   []{ set_size(2); });
-    videoMenu.add   ("Size 3x",   []{ set_size(3); });
+    mainMenu = new Menu;
+    mainMenu->add(new Entry("Load ROM", []{ menu = fileMenu; }));
+    mainMenu->add(new Entry("Settings", []{ menu = settingsMenu; }));
+    mainMenu->add(new Entry("Exit",     []{ exit(0); }));
+
+    settingsMenu = new Menu;
+    settingsMenu->add(new Entry("<",     []{ menu = mainMenu; }));
+    settingsMenu->add(new Entry("Video", []{ menu = videoMenu; }));
+    settingsMenu->add(new Entry("Controls"));
+
+    videoMenu = new Menu;
+    videoMenu->add(new Entry("<",       []{ menu = settingsMenu; }));
+    videoMenu->add(new Entry("Size 1x", []{ set_size(1); }));
+    videoMenu->add(new Entry("Size 2x", []{ set_size(2); }));
+    videoMenu->add(new Entry("Size 3x", []{ set_size(3); }));
+
     fileMenu = new FileMenu;
-    menu = &mainMenu;
+
+    menu = mainMenu;
 }
 
 /* Render a texture on screen (-1 to center on an axis) */
@@ -148,7 +156,7 @@ void render()
 void toggle_pause()
 {
     pause = not pause;
-    menu  = &mainMenu;
+    menu  = mainMenu;
 
     if (pause)
         SDL_SetTextureColorMod(gameTexture,  40,  40,  40);

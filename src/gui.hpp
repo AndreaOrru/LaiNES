@@ -6,7 +6,7 @@
 namespace GUI {
 
 
-const unsigned fontSz = 16;
+const unsigned fontSz = 15;
 
 void init();
 void toggle_pause();
