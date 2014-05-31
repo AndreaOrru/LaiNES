@@ -1,4 +1,5 @@
 #include <csignal>
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include "cartridge.hpp"
 #include "cpu.hpp"
@@ -30,6 +31,7 @@ FileMenu* fileMenu;
 
 bool pause = true;
 
+// Controls settings:
 SDL_Scancode CTRL_A      = SDL_SCANCODE_A;
 SDL_Scancode CTRL_B      = SDL_SCANCODE_S;
 SDL_Scancode CTRL_SELECT = SDL_SCANCODE_SPACE;
@@ -38,7 +40,6 @@ SDL_Scancode CTRL_UP     = SDL_SCANCODE_UP;
 SDL_Scancode CTRL_DOWN   = SDL_SCANCODE_DOWN;
 SDL_Scancode CTRL_LEFT   = SDL_SCANCODE_LEFT;
 SDL_Scancode CTRL_RIGHT  = SDL_SCANCODE_RIGHT;
-
 
 /* Set the window size multiplier */
 void set_size(int mul)
@@ -72,7 +73,7 @@ void init()
     keys = SDL_GetKeyboardState(0);
 
     // Initial background:
-    SDL_Surface* backSurface  = SDL_LoadBMP("res/init.bmp");
+    SDL_Surface* backSurface  = IMG_Load("res/init.png");
     background = SDL_CreateTextureFromSurface(renderer, backSurface);
     SDL_SetTextureColorMod(background, 60, 60, 60);
     SDL_FreeSurface(backSurface);
@@ -191,10 +192,11 @@ void toggle_pause()
         SDL_SetTextureColorMod(gameTexture, 255, 255, 255);
 }
 
+/* Prompt for a key, return the scancode */
 SDL_Scancode query_key()
 {
-    SDL_Texture* question = gen_text("Press a key...", { 255, 255, 255 });
-    render_texture(question, TEXT_CENTER, height - fontSz*4);
+    SDL_Texture* prompt = gen_text("Press a key...", { 255, 255, 255 });
+    render_texture(prompt, TEXT_CENTER, height - fontSz*4);
     SDL_RenderPresent(renderer);
 
     SDL_Event e;

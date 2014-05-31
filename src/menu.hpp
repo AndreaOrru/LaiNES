@@ -31,7 +31,7 @@ class Entry
 
     virtual void select()   { selected = true;  };
     virtual void unselect() { selected = false; };
-    void trigger()  { callback(); };
+    void trigger() { callback(); };
     virtual void render();
 };
 
@@ -42,10 +42,10 @@ class ControlEntry : public Entry
 
   public:
     ControlEntry(std::string action, SDL_Scancode* key, int x = 0, int y = 0);
-    void setY(int y);
-    void select();
-    void unselect();
-    void render();
+    void setY(int y) { Entry::setY(y);    keyEntry->setY(y);    }
+    void select()    { Entry::select();   keyEntry->select();   }
+    void unselect()  { Entry::unselect(); keyEntry->unselect(); }
+    void render()    { Entry::render();   keyEntry->render();   }
 };
 
 class Menu

@@ -7,6 +7,6 @@ env = Environment(ENV       = { 'TERM' : environ['TERM'] },
                   CPPPATH   = 'src',
                   CXXFLAGS  = flags,
                   LINKFLAGS = flags,
-                  LIBS      = ['SDL2', 'SDL2_ttf'])
+                  LIBS      = ['SDL2', 'SDL2_image', 'SDL2_ttf'])
 
 env.Program('laines', Glob('src/*.cpp') + Glob('src/*/*.cpp'))

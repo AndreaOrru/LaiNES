@@ -30,6 +30,11 @@ void Entry::setLabel(string label)
     redTexture   = gen_text(label, { 255,   0,   0 });
 }
 
+void Entry::render()
+{
+    render_texture(selected ? redTexture : whiteTexture, getX(), getY());
+}
+
 
 ControlEntry::ControlEntry(string action, SDL_Scancode* key, int x, int y) : key(key),
     Entry::Entry(
@@ -39,36 +44,6 @@ ControlEntry::ControlEntry(string action, SDL_Scancode* key, int x, int y) : key
         y)
 {
     this->keyEntry = new Entry(SDL_GetScancodeName(*key), []{}, TEXT_RIGHT, y);
-}
-
-void ControlEntry::setY(int y)
-{
-    Entry::setY(y);
-    this->keyEntry->setY(y);
-}
-
-void ControlEntry::select()
-{
-    Entry::select();
-    this->keyEntry->select();
-}
-
-void ControlEntry::unselect()
-{
-    Entry::unselect();
-    this->keyEntry->unselect();
-}
-
-void ControlEntry::render()
-{
-    Entry::render();
-    this->keyEntry->render();
-}
-
-
-void Entry::render()
-{
-    render_texture(selected ? redTexture : whiteTexture, getX(), getY());
 }
 
 
