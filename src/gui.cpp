@@ -25,9 +25,19 @@ Menu* menu;
 Menu* mainMenu;
 Menu* settingsMenu;
 Menu* videoMenu;
+Menu* controlMenu;
 FileMenu* fileMenu;
 
 bool pause = true;
+
+SDL_Scancode CTRL_A      = SDL_SCANCODE_A;
+SDL_Scancode CTRL_B      = SDL_SCANCODE_S;
+SDL_Scancode CTRL_SELECT = SDL_SCANCODE_SPACE;
+SDL_Scancode CTRL_START  = SDL_SCANCODE_RETURN;
+SDL_Scancode CTRL_UP     = SDL_SCANCODE_UP;
+SDL_Scancode CTRL_DOWN   = SDL_SCANCODE_DOWN;
+SDL_Scancode CTRL_LEFT   = SDL_SCANCODE_LEFT;
+SDL_Scancode CTRL_RIGHT  = SDL_SCANCODE_RIGHT;
 
 
 /* Set the window size multiplier */
@@ -74,9 +84,9 @@ void init()
     mainMenu->add(new Entry("Exit",     []{ exit(0); }));
 
     settingsMenu = new Menu;
-    settingsMenu->add(new Entry("<",     []{ menu = mainMenu; }));
-    settingsMenu->add(new Entry("Video", []{ menu = videoMenu; }));
-    settingsMenu->add(new Entry("Controls"));
+    settingsMenu->add(new Entry("<",        []{ menu = mainMenu; }));
+    settingsMenu->add(new Entry("Video",    []{ menu = videoMenu; }));
+    settingsMenu->add(new Entry("Controls", []{ menu = controlMenu; }));
 
     videoMenu = new Menu;
     videoMenu->add(new Entry("<",       []{ menu = settingsMenu; }));
@@ -84,20 +94,37 @@ void init()
     videoMenu->add(new Entry("Size 2x", []{ set_size(2); }));
     videoMenu->add(new Entry("Size 3x", []{ set_size(3); }));
 
+    controlMenu = new Menu;
+    controlMenu->add(new Entry("<", []{ menu = settingsMenu; }));
+    controlMenu->add(new ControlEntry("Up",     &CTRL_UP));
+    controlMenu->add(new ControlEntry("Down",   &CTRL_DOWN));
+    controlMenu->add(new ControlEntry("Left",   &CTRL_LEFT));
+    controlMenu->add(new ControlEntry("Right",  &CTRL_RIGHT));
+    controlMenu->add(new ControlEntry("A",      &CTRL_A));
+    controlMenu->add(new ControlEntry("B",      &CTRL_B));
+    controlMenu->add(new ControlEntry("Start",  &CTRL_START));
+    controlMenu->add(new ControlEntry("Select", &CTRL_SELECT));
+
     fileMenu = new FileMenu;
 
     menu = mainMenu;
 }
 
-/* Render a texture on screen (-1 to center on an axis) */
+/* Render a texture on screen */
 void render_texture(SDL_Texture* texture, int x, int y)
 {
     int w, h;
     SDL_Rect dest;
 
     SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
-    dest.x = (x < 0) ? ((width  / 2) - (dest.w / 2)) : x;
-    dest.y = (y < 0) ? ((height / 2) - (dest.h / 2)) : y;
+    if (x == TEXT_CENTER)
+        dest.x = width/2 - dest.w/2;
+    else if (x == TEXT_RIGHT)
+        dest.x = width - dest.w - 10;
+    else
+        dest.x = x + 10;
+    dest.y = y + 5;
+
     SDL_RenderCopy(renderer, texture, NULL, &dest);
 }
 
@@ -117,14 +144,14 @@ u8 get_joypad_state(int n)
     u8 j = 0;
     if (n == 0)
     {
-        j |= (keys[SDL_SCANCODE_A])      << 0;  // A.
-        j |= (keys[SDL_SCANCODE_S])      << 1;  // B.
-        j |= (keys[SDL_SCANCODE_SPACE])  << 2;  // Select.
-        j |= (keys[SDL_SCANCODE_RETURN]) << 3;  // Start.
-        j |= (keys[SDL_SCANCODE_UP])     << 4;  // Up.
-        j |= (keys[SDL_SCANCODE_DOWN])   << 5;  // Down.
-        j |= (keys[SDL_SCANCODE_LEFT])   << 6;  // Left.
-        j |= (keys[SDL_SCANCODE_RIGHT])  << 7;  // Right.
+        j |= (keys[CTRL_A])      << 0;
+        j |= (keys[CTRL_B])      << 1;
+        j |= (keys[CTRL_SELECT]) << 2;
+        j |= (keys[CTRL_START])  << 3;
+        j |= (keys[CTRL_UP])     << 4;
+        j |= (keys[CTRL_DOWN])   << 5;
+        j |= (keys[CTRL_LEFT])   << 6;
+        j |= (keys[CTRL_RIGHT])  << 7;
     }
     return j;
 }
@@ -162,6 +189,21 @@ void toggle_pause()
         SDL_SetTextureColorMod(gameTexture,  40,  40,  40);
     else
         SDL_SetTextureColorMod(gameTexture, 255, 255, 255);
+}
+
+SDL_Scancode query_key()
+{
+    SDL_Texture* question = gen_text("Press a key...", { 255, 255, 255 });
+    render_texture(question, TEXT_CENTER, height - fontSz*4);
+    SDL_RenderPresent(renderer);
+
+    SDL_Event e;
+    while (true)
+    {
+        SDL_PollEvent(&e);
+        if (e.type == SDL_KEYDOWN)
+            return e.key.keysym.scancode;
+    }
 }
 
 /* Run the emulator */

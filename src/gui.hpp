@@ -6,10 +6,13 @@
 namespace GUI {
 
 
+const int TEXT_CENTER = -1;
+const int TEXT_RIGHT  = -2;
 const unsigned fontSz = 15;
 
 void init();
 void toggle_pause();
+SDL_Scancode query_key();
 void run();
 
 SDL_Texture* gen_text(std::string text, SDL_Color color);

@@ -1,7 +1,6 @@
 #include <dirent.h>
 #include <unistd.h>
 #include "cartridge.hpp"
-#include "gui.hpp"
 #include "menu.hpp"
 
 namespace GUI {
@@ -9,10 +8,9 @@ namespace GUI {
 using namespace std;
 
 
-Entry::Entry(string label, function<void()> callback, int x, int y) : label(label), callback(callback), x(x), y(y)
+Entry::Entry(string label, function<void()> callback, int x, int y) : callback(callback), x(x), y(y)
 {
-    whiteTexture = gen_text(label, { 255, 255, 255 });
-    redTexture   = gen_text(label, { 255,   0,   0 });
+    setLabel(label);
 }
 
 Entry::~Entry()
@@ -20,6 +18,53 @@ Entry::~Entry()
     SDL_DestroyTexture(whiteTexture);
     SDL_DestroyTexture(redTexture);
 }
+
+void Entry::setLabel(string label)
+{
+    this->label = label;
+
+    if (whiteTexture != nullptr) SDL_DestroyTexture(whiteTexture);
+    if (redTexture   != nullptr) SDL_DestroyTexture(redTexture);
+
+    whiteTexture = gen_text(label, { 255, 255, 255 });
+    redTexture   = gen_text(label, { 255,   0,   0 });
+}
+
+
+ControlEntry::ControlEntry(string action, SDL_Scancode* key, int x, int y) : key(key),
+    Entry::Entry(
+        action,
+        [&]{ keyEntry->setLabel(SDL_GetScancodeName(*(this->key) = query_key())); },
+        x,
+        y)
+{
+    this->keyEntry = new Entry(SDL_GetScancodeName(*key), []{}, TEXT_RIGHT, y);
+}
+
+void ControlEntry::setY(int y)
+{
+    Entry::setY(y);
+    this->keyEntry->setY(y);
+}
+
+void ControlEntry::select()
+{
+    Entry::select();
+    this->keyEntry->select();
+}
+
+void ControlEntry::unselect()
+{
+    Entry::unselect();
+    this->keyEntry->unselect();
+}
+
+void ControlEntry::render()
+{
+    Entry::render();
+    this->keyEntry->render();
+}
+
 
 void Entry::render()
 {
@@ -84,13 +129,13 @@ void FileMenu::change_dir(string dir)
         {
             add(new Entry(name + "/",
                           [=]{ change_dir(path); },
-                          10));
+                          0));
         }
         else if (name.size() > 4 and name.substr(name.size() - 4) == ".nes")
         {
             add(new Entry(name,
                           [=]{ Cartridge::load(path.c_str()); toggle_pause(); },
-                          10));
+                          0));
         }
     }
     closedir(dp);
