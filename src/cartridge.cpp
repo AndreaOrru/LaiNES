@@ -4,6 +4,7 @@
 #include "mappers/mapper0.hpp"
 #include "mappers/mapper1.hpp"
 #include "mappers/mapper4.hpp"
+#include "ppu.hpp"
 #include "cartridge.hpp"
 
 namespace Cartridge {
@@ -55,6 +56,7 @@ void load(const char* fileName)
     }
 
     CPU::power();
+    PPU::reset();
     APU::reset();
 }
 
