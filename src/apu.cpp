@@ -20,11 +20,17 @@ void init()
     apu.dmc_reader(CPU::dmc_read);
 }
 
+void reset()
+{
+    apu.reset();
+    buf.clear();
+}
+
 template <bool write> u8 access(int elapsed, u16 addr, u8 v)
 {
     if (write)
         apu.write_register(elapsed, addr, v);
-    else if (addr == 0x4015)
+    else if (addr == apu.status_addr)
         v = apu.read_status(elapsed);
 
     return v;

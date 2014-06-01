@@ -170,7 +170,7 @@ void new_frame(u32* pixels)
     SDL_UpdateTexture(gameTexture, NULL, pixels, width * sizeof(u32));
 }
 
-void new_samples(const blip_sample_t* samples, long count)
+void new_samples(const blip_sample_t* samples, size_t count)
 {
     soundQueue->write(samples, count);
 }

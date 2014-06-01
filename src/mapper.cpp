@@ -2,7 +2,7 @@
 #include "mapper.hpp"
 
 
-Mapper::Mapper(u8* rom)
+Mapper::Mapper(u8* rom) : rom(rom)
 {
     // Read infos from header:
     prgSize      = rom[4] * 0x4000;
@@ -19,9 +19,18 @@ Mapper::Mapper(u8* rom)
     // CHR RAM:
     else
     {
+        chrRam = true;
         chrSize = 0x2000;
         this->chr = new u8[chrSize];
     }
+}
+
+Mapper::~Mapper()
+{
+    delete rom;
+    delete prgRam;
+    if (chrRam)
+        delete chr;
 }
 
 /* Access to memory */

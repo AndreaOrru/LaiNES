@@ -1,4 +1,5 @@
 #include <cstdio>
+#include "apu.hpp"
 #include "cpu.hpp"
 #include "mappers/mapper0.hpp"
 #include "mappers/mapper1.hpp"
@@ -45,6 +46,7 @@ void load(const char* fileName)
     fclose(f);
 
     int mapperNum = (rom[7] & 0xF0) | (rom[6] >> 4);
+    if (loaded()) delete mapper;
     switch (mapperNum)
     {
         case 0:  mapper = new Mapper0(rom); break;
@@ -53,6 +55,7 @@ void load(const char* fileName)
     }
 
     CPU::power();
+    APU::reset();
 }
 
 bool loaded()

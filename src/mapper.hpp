@@ -5,6 +5,9 @@
 
 class Mapper
 {
+    u8* rom;
+    bool chrRam = false;
+
   protected:
     u32 prgMap[4];
     u32 chrMap[8];
@@ -17,6 +20,7 @@ class Mapper
 
   public:
     Mapper(u8* rom);
+    ~Mapper();
 
     u8 read(u16 addr);
     virtual u8 write(u16 addr, u8 v) { return v; }
