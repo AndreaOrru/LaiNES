@@ -1,6 +1,8 @@
 #include <csignal>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include "Sound_Queue.h"
+#include "apu.hpp"
 #include "cartridge.hpp"
 #include "cpu.hpp"
 #include "menu.hpp"
@@ -20,6 +22,7 @@ SDL_Texture* gameTexture;
 SDL_Texture* background;
 TTF_Font* font;
 u8 const* keys;
+Sound_Queue* soundQueue;
 
 // Menus:
 Menu* menu;
@@ -52,9 +55,13 @@ void set_size(int mul)
 void init()
 {
     // Initialize graphics system:
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
     TTF_Init();
+
+    APU::init();
+    soundQueue = new Sound_Queue;
+    soundQueue->init(44100);
 
     // Initialize graphics structures:
     window      = SDL_CreateWindow  ("LaiNES",
@@ -161,6 +168,11 @@ u8 get_joypad_state(int n)
 void new_frame(u32* pixels)
 {
     SDL_UpdateTexture(gameTexture, NULL, pixels, width * sizeof(u32));
+}
+
+void new_samples(const blip_sample_t* samples, long count)
+{
+    soundQueue->write(samples, count);
 }
 
 /* Render the screen */

@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <string>
+#include "nes_apu/Nes_Apu.h"
 #include "common.hpp"
 
 namespace GUI {
@@ -20,6 +21,7 @@ void render_texture(SDL_Texture* texture, int x, int y);
 
 u8 get_joypad_state(int n);
 void new_frame(u32* pixels);
+void new_samples(const blip_sample_t* samples, long count);
 
 
 }

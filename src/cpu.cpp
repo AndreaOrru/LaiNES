@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cstring>
+#include "apu.hpp"
 #include "cartridge.hpp"
 #include "joypad.hpp"
 #include "ppu.hpp"
@@ -16,12 +17,13 @@ Flags P;
 bool nmi, irq;
 
 // Remaining clocks to end frame:
-const int clocks_per_frame = 29781;
-int clocks;
+const int totalCycles = 29781;
+int remainingCycles;
+inline int elapsed() { return totalCycles - remainingCycles; }
 
 /* Cycle emulation */
 #define T   tick()
-inline void tick() { PPU::step(); PPU::step(); PPU::step(); clocks--; }
+inline void tick() { PPU::step(); PPU::step(); PPU::step(); remainingCycles--; }
 
 /* Flags updating */
 inline void upd_cv(u8 x, u8 y, s16 r) { P[C] = (r>0xFF); P[V] = ~(x^y) & (x^r) & 0x80; }
@@ -33,21 +35,27 @@ inline bool cross(u16 a, u8 i) { return ((a+i) & 0xFF00) != ((a & 0xFF00)); }
 void dma_oam(u8 bank);
 template<bool wr> inline u8 access(u16 addr, u8 v = 0)
 {
-    T; u8* r;
+    u8* r;
     switch (addr)
     {
         case 0x0000 ... 0x1FFF:  r = &ram[addr % 0x800]; if (wr) *r = v; return *r;  // RAM.
         case 0x2000 ... 0x3FFF:  return PPU::access<wr>(addr % 8, v);                // PPU.
+
+        // APU:
+        case 0x4000 ... 0x4013:
+        case            0x4015:          return APU::access<wr>(elapsed(), addr, v);
+        case            0x4017:  if (wr) return APU::access<wr>(elapsed(), addr, v);
+                                 else return Joypad::read_state(1);                  // Joypad 1.
+
         case            0x4014:  if (wr) dma_oam(v); break;                          // OAM DMA.
         case            0x4016:  if (wr) { Joypad::write_strobe(v & 1); break; }     // Joypad strobe.
                                  else return Joypad::read_state(0);                  // Joypad 0.
-        case            0x4017:  if (!wr) return Joypad::read_state(1); break;       // Joypad 1.
         case 0x4018 ... 0xFFFF:  return Cartridge::access<wr>(addr, v);              // Cartridge.
     }
     return 0;
 }
-inline u8  wr(u16 a, u8 v)      { return access<1>(a, v);      }
-inline u8  rd(u16 a)            { return access<0>(a);         }
+inline u8  wr(u16 a, u8 v)      { T; return access<1>(a, v);   }
+inline u8  rd(u16 a)            { T; return access<0>(a);      }
 inline u16 rd16_d(u16 a, u16 b) { return rd(a) | (rd(b) << 8); }  // Read from A and B and merge.
 inline u16 rd16(u16 a)          { return rd16_d(a, a+1);       }
 inline u8  push(u8 v)           { return wr(0x100 + (S--), v); }
@@ -228,10 +236,12 @@ void exec()
 void set_nmi(bool v) { nmi = v; }
 void set_irq(bool v) { irq = v; }
 
+int dmc_read(void*, cpu_addr_t addr) { return access<0>(addr); }
+
 /* Turn on the CPU */
 void power()
 {
-    clocks = 0;
+    remainingCycles = 0;
 
     P.set(0x04);
     A = X = Y = S = 0x00;
@@ -244,15 +254,17 @@ void power()
 /* Run the CPU for roughly a frame */
 void run_frame()
 {
-    clocks += clocks_per_frame;
+    remainingCycles += totalCycles;
 
-    while (clocks > 0)
+    while (remainingCycles > 0)
     {
         if (nmi) INT<NMI>();
         else if (irq and !P[I]) INT<IRQ>();
 
         exec();
     }
+
+    APU::run_frame(elapsed());
 }
 
 

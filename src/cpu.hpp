@@ -1,5 +1,6 @@
 #pragma once
 #include "common.hpp"
+#include "nes_apu/Nes_Apu.h"
 
 namespace CPU {
 
@@ -23,6 +24,7 @@ class Flags
 
 void set_nmi(bool v = true);
 void set_irq(bool v = true);
+int dmc_read(void*, cpu_addr_t addr);
 void power();
 void run_frame();
 
