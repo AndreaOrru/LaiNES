@@ -46,12 +46,22 @@ ControlEntry::ControlEntry(string action, SDL_Scancode* key, int x, int y) : key
     this->keyEntry = new Entry(SDL_GetScancodeName(*key), []{}, TEXT_RIGHT, y);
 }
 
+ControlEntry::ControlEntry(string action, int* button, int x, int y) : button(button),
+    Entry::Entry(
+        action,
+        [&]{ keyEntry->setLabel(to_string(*(this->button) = query_button())); },
+        x,
+        y)
+{
+    this->keyEntry = new Entry(to_string(*button), []{}, TEXT_RIGHT, y);
+}
+
 
 void Menu::add(Entry* entry)
 {
     if (entries.empty())
         entry->select();
-    entry->setY(entries.size() * fontSz);
+    entry->setY(entries.size() * FONT_SZ);
     entries.push_back(entry);
 }
 

@@ -12,8 +12,8 @@ namespace GUI {
 
 
 // Screen size:
-const unsigned width  = 256;
-const unsigned height = 240;
+const unsigned WIDTH  = 256;
+const unsigned HEIGHT = 240;
 
 // SDL structures:
 SDL_Window* window;
@@ -23,31 +23,38 @@ SDL_Texture* background;
 TTF_Font* font;
 u8 const* keys;
 Sound_Queue* soundQueue;
+SDL_Joystick* joystick = nullptr;
 
 // Menus:
 Menu* menu;
 Menu* mainMenu;
 Menu* settingsMenu;
 Menu* videoMenu;
-Menu* controlMenu;
+Menu* keyboardMenu[2];
+Menu* joystickMenu[2];
 FileMenu* fileMenu;
 
 bool pause = true;
 
 // Controls settings:
-SDL_Scancode CTRL_A      = SDL_SCANCODE_A;
-SDL_Scancode CTRL_B      = SDL_SCANCODE_S;
-SDL_Scancode CTRL_SELECT = SDL_SCANCODE_SPACE;
-SDL_Scancode CTRL_START  = SDL_SCANCODE_RETURN;
-SDL_Scancode CTRL_UP     = SDL_SCANCODE_UP;
-SDL_Scancode CTRL_DOWN   = SDL_SCANCODE_DOWN;
-SDL_Scancode CTRL_LEFT   = SDL_SCANCODE_LEFT;
-SDL_Scancode CTRL_RIGHT  = SDL_SCANCODE_RIGHT;
+SDL_Scancode KEY_A     [] = { SDL_SCANCODE_A,      SDL_SCANCODE_ESCAPE };
+SDL_Scancode KEY_B     [] = { SDL_SCANCODE_S,      SDL_SCANCODE_ESCAPE };
+SDL_Scancode KEY_SELECT[] = { SDL_SCANCODE_SPACE,  SDL_SCANCODE_ESCAPE };
+SDL_Scancode KEY_START [] = { SDL_SCANCODE_RETURN, SDL_SCANCODE_ESCAPE };
+SDL_Scancode KEY_UP    [] = { SDL_SCANCODE_UP,     SDL_SCANCODE_ESCAPE };
+SDL_Scancode KEY_DOWN  [] = { SDL_SCANCODE_DOWN,   SDL_SCANCODE_ESCAPE };
+SDL_Scancode KEY_LEFT  [] = { SDL_SCANCODE_LEFT,   SDL_SCANCODE_ESCAPE };
+SDL_Scancode KEY_RIGHT [] = { SDL_SCANCODE_RIGHT,  SDL_SCANCODE_ESCAPE };
+int BTN_A     [] = { 0, -1 };
+int BTN_B     [] = { 1, -1 };
+int BTN_SELECT[] = { 8, -1 };
+int BTN_START [] = { 9, -1 };
+bool useJoystick[] = { false, false };
 
 /* Set the window size multiplier */
 void set_size(int mul)
 {
-    SDL_SetWindowSize(window, width * mul, height * mul);
+    SDL_SetWindowSize(window, WIDTH * mul, HEIGHT * mul);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
@@ -55,9 +62,12 @@ void set_size(int mul)
 void init()
 {
     // Initialize graphics system:
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
     TTF_Init();
+
+    if (SDL_NumJoysticks() > 0)
+        joystick = SDL_JoystickOpen(0);
 
     APU::init();
     soundQueue = new Sound_Queue;
@@ -66,17 +76,17 @@ void init()
     // Initialize graphics structures:
     window      = SDL_CreateWindow  ("LaiNES",
                                      SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                     width, height, 0);
+                                     WIDTH, HEIGHT, 0);
 
     renderer    = SDL_CreateRenderer(window, -1,
                                      SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    SDL_RenderSetLogicalSize(renderer, width, height);
+    SDL_RenderSetLogicalSize(renderer, WIDTH, HEIGHT);
 
     gameTexture = SDL_CreateTexture (renderer,
                                      SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
-                                     width, height);
+                                     WIDTH, HEIGHT);
 
-    font = TTF_OpenFont("res/font.ttf", fontSz);
+    font = TTF_OpenFont("res/font.ttf", FONT_SZ);
     keys = SDL_GetKeyboardState(0);
 
     // Initial background:
@@ -92,9 +102,10 @@ void init()
     mainMenu->add(new Entry("Exit",     []{ exit(0); }));
 
     settingsMenu = new Menu;
-    settingsMenu->add(new Entry("<",        []{ menu = mainMenu; }));
-    settingsMenu->add(new Entry("Video",    []{ menu = videoMenu; }));
-    settingsMenu->add(new Entry("Controls", []{ menu = controlMenu; }));
+    settingsMenu->add(new Entry("<",          []{ menu = mainMenu; }));
+    settingsMenu->add(new Entry("Video",      []{ menu = videoMenu; }));
+    settingsMenu->add(new Entry("Controls 1", []{ menu = useJoystick[0] ? joystickMenu[0] : keyboardMenu[0]; }));
+    settingsMenu->add(new Entry("Controls 2", []{ menu = useJoystick[1] ? joystickMenu[1] : keyboardMenu[1]; }));
 
     videoMenu = new Menu;
     videoMenu->add(new Entry("<",       []{ menu = settingsMenu; }));
@@ -102,16 +113,32 @@ void init()
     videoMenu->add(new Entry("Size 2x", []{ set_size(2); }));
     videoMenu->add(new Entry("Size 3x", []{ set_size(3); }));
 
-    controlMenu = new Menu;
-    controlMenu->add(new Entry("<", []{ menu = settingsMenu; }));
-    controlMenu->add(new ControlEntry("Up",     &CTRL_UP));
-    controlMenu->add(new ControlEntry("Down",   &CTRL_DOWN));
-    controlMenu->add(new ControlEntry("Left",   &CTRL_LEFT));
-    controlMenu->add(new ControlEntry("Right",  &CTRL_RIGHT));
-    controlMenu->add(new ControlEntry("A",      &CTRL_A));
-    controlMenu->add(new ControlEntry("B",      &CTRL_B));
-    controlMenu->add(new ControlEntry("Start",  &CTRL_START));
-    controlMenu->add(new ControlEntry("Select", &CTRL_SELECT));
+    for (int i = 0; i < 2; i++)
+    {
+        keyboardMenu[i] = new Menu;
+        keyboardMenu[i]->add(new Entry("<", []{ menu = settingsMenu; }));
+        if (joystick != nullptr)
+            keyboardMenu[i]->add(new Entry("Joystick >", [=]{ menu = joystickMenu[i]; useJoystick[i] = true; }));
+        keyboardMenu[i]->add(new ControlEntry("Up",     &KEY_UP[i]));
+        keyboardMenu[i]->add(new ControlEntry("Down",   &KEY_DOWN[i]));
+        keyboardMenu[i]->add(new ControlEntry("Left",   &KEY_LEFT[i]));
+        keyboardMenu[i]->add(new ControlEntry("Right",  &KEY_RIGHT[i]));
+        keyboardMenu[i]->add(new ControlEntry("A",      &KEY_A[i]));
+        keyboardMenu[i]->add(new ControlEntry("B",      &KEY_B[i]));
+        keyboardMenu[i]->add(new ControlEntry("Start",  &KEY_START[i]));
+        keyboardMenu[i]->add(new ControlEntry("Select", &KEY_SELECT[i]));
+
+        if (joystick != nullptr)
+        {
+            joystickMenu[i] = new Menu;
+            joystickMenu[i]->add(new Entry("<", []{ menu = settingsMenu; }));
+            joystickMenu[i]->add(new Entry("< Keyboard", [=]{ menu = keyboardMenu[i]; useJoystick[i] = false; }));
+            joystickMenu[i]->add(new ControlEntry("A",      &BTN_A[i]));
+            joystickMenu[i]->add(new ControlEntry("B",      &BTN_B[i]));
+            joystickMenu[i]->add(new ControlEntry("Start",  &BTN_START[i]));
+            joystickMenu[i]->add(new ControlEntry("Select", &BTN_SELECT[i]));
+        }
+    }
 
     fileMenu = new FileMenu;
 
@@ -126,9 +153,9 @@ void render_texture(SDL_Texture* texture, int x, int y)
 
     SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
     if (x == TEXT_CENTER)
-        dest.x = width/2 - dest.w/2;
+        dest.x = WIDTH/2 - dest.w/2;
     else if (x == TEXT_RIGHT)
-        dest.x = width - dest.w - 10;
+        dest.x = WIDTH - dest.w - 10;
     else
         dest.x = x + 10;
     dest.y = y + 5;
@@ -149,17 +176,30 @@ SDL_Texture* gen_text(std::string text, SDL_Color color)
 /* Get the joypad state from SDL */
 u8 get_joypad_state(int n)
 {
+    const int DEAD_ZONE = 8000;
+
     u8 j = 0;
-    if (n == 0)
+    if (useJoystick[n])
     {
-        j |= (keys[CTRL_A])      << 0;
-        j |= (keys[CTRL_B])      << 1;
-        j |= (keys[CTRL_SELECT]) << 2;
-        j |= (keys[CTRL_START])  << 3;
-        j |= (keys[CTRL_UP])     << 4;
-        j |= (keys[CTRL_DOWN])   << 5;
-        j |= (keys[CTRL_LEFT])   << 6;
-        j |= (keys[CTRL_RIGHT])  << 7;
+        j |= (SDL_JoystickGetButton(joystick, BTN_A[n]))      << 0;  // A.
+        j |= (SDL_JoystickGetButton(joystick, BTN_B[n]))      << 1;  // B.
+        j |= (SDL_JoystickGetButton(joystick, BTN_SELECT[n])) << 2;  // Select.
+        j |= (SDL_JoystickGetButton(joystick, BTN_START[n]))  << 3;  // Start.
+        j |= (SDL_JoystickGetAxis(joystick, 1) < -DEAD_ZONE)  << 4;  // Up.
+        j |= (SDL_JoystickGetAxis(joystick, 1) >  DEAD_ZONE)  << 5;  // Down.
+        j |= (SDL_JoystickGetAxis(joystick, 0) < -DEAD_ZONE)  << 6;  // Left.
+        j |= (SDL_JoystickGetAxis(joystick, 0) >  DEAD_ZONE)  << 7;  // Right.
+    }
+    else
+    {
+        j |= (keys[KEY_A[n]])      << 0;
+        j |= (keys[KEY_B[n]])      << 1;
+        j |= (keys[KEY_SELECT[n]]) << 2;
+        j |= (keys[KEY_START[n]])  << 3;
+        j |= (keys[KEY_UP[n]])     << 4;
+        j |= (keys[KEY_DOWN[n]])   << 5;
+        j |= (keys[KEY_LEFT[n]])   << 6;
+        j |= (keys[KEY_RIGHT[n]])  << 7;
     }
     return j;
 }
@@ -167,7 +207,7 @@ u8 get_joypad_state(int n)
 /* Send the rendered frame to the GUI */
 void new_frame(u32* pixels)
 {
-    SDL_UpdateTexture(gameTexture, NULL, pixels, width * sizeof(u32));
+    SDL_UpdateTexture(gameTexture, NULL, pixels, WIDTH * sizeof(u32));
 }
 
 void new_samples(const blip_sample_t* samples, size_t count)
@@ -199,7 +239,7 @@ void toggle_pause()
     menu  = mainMenu;
 
     if (pause)
-        SDL_SetTextureColorMod(gameTexture,  40,  40,  40);
+        SDL_SetTextureColorMod(gameTexture,  60,  60,  60);
     else
         SDL_SetTextureColorMod(gameTexture, 255, 255, 255);
 }
@@ -208,7 +248,7 @@ void toggle_pause()
 SDL_Scancode query_key()
 {
     SDL_Texture* prompt = gen_text("Press a key...", { 255, 255, 255 });
-    render_texture(prompt, TEXT_CENTER, height - fontSz*4);
+    render_texture(prompt, TEXT_CENTER, HEIGHT - FONT_SZ*4);
     SDL_RenderPresent(renderer);
 
     SDL_Event e;
@@ -220,6 +260,21 @@ SDL_Scancode query_key()
     }
 }
 
+int query_button()
+{
+    SDL_Texture* prompt = gen_text("Press a button...", { 255, 255, 255 });
+    render_texture(prompt, TEXT_CENTER, HEIGHT - FONT_SZ*4);
+    SDL_RenderPresent(renderer);
+
+    SDL_Event e;
+    while (true)
+    {
+        SDL_PollEvent(&e);
+        if (e.type == SDL_JOYBUTTONDOWN)
+            return e.jbutton.button;
+    }
+}
+
 /* Run the emulator */
 void run()
 {
@@ -227,8 +282,8 @@ void run()
 
     // Framerate control:
     u32 frameStart, frameTime;
-    const int fps   = 60;
-    const int delay = 1000.0f / fps;
+    const int FPS   = 60;
+    const int DELAY = 1000.0f / FPS;
 
     while (true)
     {
@@ -246,14 +301,13 @@ void run()
                         menu->update(keys);
             }
 
-
         if (not pause) CPU::run_frame();
         render();
 
         // Wait to mantain framerate:
         frameTime = SDL_GetTicks() - frameStart;
-        if (frameTime < delay)
-            SDL_Delay((int)(delay - frameTime));
+        if (frameTime < DELAY)
+            SDL_Delay((int)(DELAY - frameTime));
     }
 }
 

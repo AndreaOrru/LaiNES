@@ -38,10 +38,12 @@ class Entry
 class ControlEntry : public Entry
 {
     SDL_Scancode* key;
+    int* button;
     Entry* keyEntry;
 
   public:
     ControlEntry(std::string action, SDL_Scancode* key, int x = 0, int y = 0);
+    ControlEntry(std::string action, int* button, int x = 0, int y = 0);
     void setY(int y) { Entry::setY(y);    keyEntry->setY(y);    }
     void select()    { Entry::select();   keyEntry->select();   }
     void unselect()  { Entry::unselect(); keyEntry->unselect(); }

@@ -17,9 +17,9 @@ Flags P;
 bool nmi, irq;
 
 // Remaining clocks to end frame:
-const int totalCycles = 29781;
+const int TOTAL_CYCLES = 29781;
 int remainingCycles;
-inline int elapsed() { return totalCycles - remainingCycles; }
+inline int elapsed() { return TOTAL_CYCLES - remainingCycles; }
 
 /* Cycle emulation */
 #define T   tick()
@@ -254,7 +254,7 @@ void power()
 /* Run the CPU for roughly a frame */
 void run_frame()
 {
-    remainingCycles += totalCycles;
+    remainingCycles += TOTAL_CYCLES;
 
     while (remainingCycles > 0)
     {

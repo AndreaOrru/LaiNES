@@ -8,8 +8,8 @@ namespace APU {
 Nes_Apu apu;
 Blip_Buffer buf;
 
-const int outSize = 4096;
-blip_sample_t outBuf[outSize];
+const int OUT_SIZE = 4096;
+blip_sample_t outBuf[OUT_SIZE];
 
 void init()
 {
@@ -42,8 +42,8 @@ void run_frame(int elapsed)
     apu.end_frame(elapsed);
     buf.end_frame(elapsed);
 
-    if (buf.samples_avail() >= outSize)
-        GUI::new_samples(outBuf, buf.read_samples(outBuf, outSize));
+    if (buf.samples_avail() >= OUT_SIZE)
+        GUI::new_samples(outBuf, buf.read_samples(outBuf, OUT_SIZE));
 }
 
 
