@@ -23,7 +23,7 @@ SDL_Texture* background;
 TTF_Font* font;
 u8 const* keys;
 Sound_Queue* soundQueue;
-SDL_Joystick* joystick = nullptr;
+SDL_Joystick* joystick[] = { nullptr, nullptr };
 
 // Menus:
 Menu* menu;
@@ -45,10 +45,14 @@ SDL_Scancode KEY_UP    [] = { SDL_SCANCODE_UP,     SDL_SCANCODE_ESCAPE };
 SDL_Scancode KEY_DOWN  [] = { SDL_SCANCODE_DOWN,   SDL_SCANCODE_ESCAPE };
 SDL_Scancode KEY_LEFT  [] = { SDL_SCANCODE_LEFT,   SDL_SCANCODE_ESCAPE };
 SDL_Scancode KEY_RIGHT [] = { SDL_SCANCODE_RIGHT,  SDL_SCANCODE_ESCAPE };
-int BTN_A     [] = { 0, -1 };
-int BTN_B     [] = { 1, -1 };
-int BTN_SELECT[] = { 8, -1 };
-int BTN_START [] = { 9, -1 };
+int BTN_UP    [] = { -1, -1 };
+int BTN_DOWN  [] = { -1, -1 };
+int BTN_LEFT  [] = { -1, -1 };
+int BTN_RIGHT [] = { -1, -1 };
+int BTN_A     [] = { -1, -1 };
+int BTN_B     [] = { -1, -1 };
+int BTN_SELECT[] = { -1, -1 };
+int BTN_START [] = { -1, -1 };
 bool useJoystick[] = { false, false };
 
 /* Set the window size multiplier */
@@ -66,8 +70,8 @@ void init()
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
     TTF_Init();
 
-    if (SDL_NumJoysticks() > 0)
-        joystick = SDL_JoystickOpen(0);
+    for (int i = 0; i < SDL_NumJoysticks(); i++)
+        joystick[i] = SDL_JoystickOpen(i);
 
     APU::init();
     soundQueue = new Sound_Queue;
@@ -102,10 +106,10 @@ void init()
     mainMenu->add(new Entry("Exit",     []{ exit(0); }));
 
     settingsMenu = new Menu;
-    settingsMenu->add(new Entry("<",          []{ menu = mainMenu; }));
-    settingsMenu->add(new Entry("Video",      []{ menu = videoMenu; }));
-    settingsMenu->add(new Entry("Controls 1", []{ menu = useJoystick[0] ? joystickMenu[0] : keyboardMenu[0]; }));
-    settingsMenu->add(new Entry("Controls 2", []{ menu = useJoystick[1] ? joystickMenu[1] : keyboardMenu[1]; }));
+    settingsMenu->add(new Entry("<",            []{ menu = mainMenu; }));
+    settingsMenu->add(new Entry("Video",        []{ menu = videoMenu; }));
+    settingsMenu->add(new Entry("Controller 1", []{ menu = useJoystick[0] ? joystickMenu[0] : keyboardMenu[0]; }));
+    settingsMenu->add(new Entry("Controller 2", []{ menu = useJoystick[1] ? joystickMenu[1] : keyboardMenu[1]; }));
 
     videoMenu = new Menu;
     videoMenu->add(new Entry("<",       []{ menu = settingsMenu; }));
@@ -117,7 +121,7 @@ void init()
     {
         keyboardMenu[i] = new Menu;
         keyboardMenu[i]->add(new Entry("<", []{ menu = settingsMenu; }));
-        if (joystick != nullptr)
+        if (joystick[i] != nullptr)
             keyboardMenu[i]->add(new Entry("Joystick >", [=]{ menu = joystickMenu[i]; useJoystick[i] = true; }));
         keyboardMenu[i]->add(new ControlEntry("Up",     &KEY_UP[i]));
         keyboardMenu[i]->add(new ControlEntry("Down",   &KEY_DOWN[i]));
@@ -128,11 +132,15 @@ void init()
         keyboardMenu[i]->add(new ControlEntry("Start",  &KEY_START[i]));
         keyboardMenu[i]->add(new ControlEntry("Select", &KEY_SELECT[i]));
 
-        if (joystick != nullptr)
+        if (joystick[i] != nullptr)
         {
             joystickMenu[i] = new Menu;
             joystickMenu[i]->add(new Entry("<", []{ menu = settingsMenu; }));
             joystickMenu[i]->add(new Entry("< Keyboard", [=]{ menu = keyboardMenu[i]; useJoystick[i] = false; }));
+            joystickMenu[i]->add(new ControlEntry("Up",     &BTN_UP[i]));
+            joystickMenu[i]->add(new ControlEntry("Down",   &BTN_DOWN[i]));
+            joystickMenu[i]->add(new ControlEntry("Left",   &BTN_LEFT[i]));
+            joystickMenu[i]->add(new ControlEntry("Right",  &BTN_RIGHT[i]));
             joystickMenu[i]->add(new ControlEntry("A",      &BTN_A[i]));
             joystickMenu[i]->add(new ControlEntry("B",      &BTN_B[i]));
             joystickMenu[i]->add(new ControlEntry("Start",  &BTN_START[i]));
@@ -181,14 +189,19 @@ u8 get_joypad_state(int n)
     u8 j = 0;
     if (useJoystick[n])
     {
-        j |= (SDL_JoystickGetButton(joystick, BTN_A[n]))      << 0;  // A.
-        j |= (SDL_JoystickGetButton(joystick, BTN_B[n]))      << 1;  // B.
-        j |= (SDL_JoystickGetButton(joystick, BTN_SELECT[n])) << 2;  // Select.
-        j |= (SDL_JoystickGetButton(joystick, BTN_START[n]))  << 3;  // Start.
-        j |= (SDL_JoystickGetAxis(joystick, 1) < -DEAD_ZONE)  << 4;  // Up.
-        j |= (SDL_JoystickGetAxis(joystick, 1) >  DEAD_ZONE)  << 5;  // Down.
-        j |= (SDL_JoystickGetAxis(joystick, 0) < -DEAD_ZONE)  << 6;  // Left.
-        j |= (SDL_JoystickGetAxis(joystick, 0) >  DEAD_ZONE)  << 7;  // Right.
+        j |= (SDL_JoystickGetButton(joystick[n], BTN_A[n]))      << 0;  // A.
+        j |= (SDL_JoystickGetButton(joystick[n], BTN_B[n]))      << 1;  // B.
+        j |= (SDL_JoystickGetButton(joystick[n], BTN_SELECT[n])) << 2;  // Select.
+        j |= (SDL_JoystickGetButton(joystick[n], BTN_START[n]))  << 3;  // Start.
+
+        j |= (SDL_JoystickGetButton(joystick[n], BTN_UP[n]))     << 4;  // Up.
+        j |= (SDL_JoystickGetAxis(joystick[n], 1) < -DEAD_ZONE)  << 4;
+        j |= (SDL_JoystickGetButton(joystick[n], BTN_DOWN[n]))   << 5;  // Down.
+        j |= (SDL_JoystickGetAxis(joystick[n], 1) >  DEAD_ZONE)  << 5;
+        j |= (SDL_JoystickGetButton(joystick[n], BTN_LEFT[n]))   << 6;  // Left.
+        j |= (SDL_JoystickGetAxis(joystick[n], 0) < -DEAD_ZONE)  << 6;
+        j |= (SDL_JoystickGetButton(joystick[n], BTN_RIGHT[n]))  << 7;  // Right.
+        j |= (SDL_JoystickGetAxis(joystick[n], 0) >  DEAD_ZONE)  << 7;
     }
     else
     {
