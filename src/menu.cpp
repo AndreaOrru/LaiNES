@@ -128,7 +128,9 @@ void FileMenu::change_dir(string dir)
 
 FileMenu::FileMenu()
 {
-    change_dir(getwd(NULL));
+    char cwd[512];
+
+    change_dir(getcwd(cwd, 512));
 }
 
 
