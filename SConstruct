@@ -2,7 +2,7 @@ from os import environ
 
 flags = ['-O3', '-march=native', '-std=c++11']
 
-env = Environment(ENV       = { 'TERM' : environ['TERM'] },
+env = Environment(ENV       = environ,
                   CXX       = 'clang++',
                   CPPPATH   = 'src',
                   CPPFLAGS  = ['-Wno-unused-value'],
