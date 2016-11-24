@@ -1,5 +1,5 @@
-LaiNES - NES emulator
-=====================
+LaiNES
+======
 
 Compact, cycle-accurate NES emulator in ~1000 lines of C++.
 
