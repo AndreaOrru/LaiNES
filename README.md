@@ -38,6 +38,7 @@ scons
 The emulator comes bundled with a simple GUI to navigate the filesystem and set preferences. Use arrow keys and Enter to operate it. ESC toggles between emulation and menu.
 
 The size of the window and the controls are customizable. LaiNES supports multiple controllers and should work with joysticks as well. The default controls for the first player are as follows:
+
 ![Controls](./img/controls.png)
 
 ## Compatibility
