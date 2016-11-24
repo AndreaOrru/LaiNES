@@ -1,7 +1,7 @@
 LaiNES
 ======
 
-Cycle-accurate NES emulator.
+Compact, cycle-accurate NES emulator in ~1000 actual lines of C++.
 
 ![File Browser](./img/files.png)
 ![Controller Settings](./img/ff_settings.png)
