@@ -11,6 +11,9 @@ Compact, cycle-accurate NES emulator in ~1000 lines of C++.
 ![Super Mario Bros.](./img/super_mario.png)
 ![The Legend of Zelda](./img/zelda.png)
 
+## How are lines counted?
+There has been some discussions about how the number of lines has been computed. The claim of ~1k lines doesn't include the libraries in the boost and nes_apu folders.
+
 ## Requirements
 LaiNES should run on any Unix system that is compatible with the following tools.
 - SConstruct
