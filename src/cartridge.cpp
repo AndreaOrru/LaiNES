@@ -3,6 +3,7 @@
 #include "cpu.hpp"
 #include "mappers/mapper0.hpp"
 #include "mappers/mapper1.hpp"
+#include "mappers/mapper3.hpp"
 #include "mappers/mapper4.hpp"
 #include "ppu.hpp"
 #include "cartridge.hpp"
@@ -52,6 +53,7 @@ void load(const char* fileName)
     {
         case 0:  mapper = new Mapper0(rom); break;
         case 1:  mapper = new Mapper1(rom); break;
+        case 3:  mapper = new Mapper3(rom); break;
         case 4:  mapper = new Mapper4(rom); break;
     }
 
