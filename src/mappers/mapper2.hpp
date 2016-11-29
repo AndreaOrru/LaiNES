@@ -13,7 +13,7 @@ class Mapper2 : public Mapper
     Mapper2(u8* rom) : Mapper(rom)
     {
         regs[0] = 0;
-        vertical_mirroring = rom[7] & 0x01;
+        vertical_mirroring = rom[6] & 0x01;
         apply();
     }
 
