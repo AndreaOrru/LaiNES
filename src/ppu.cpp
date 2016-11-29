@@ -42,6 +42,9 @@ u16 nt_mirror(u16 addr)
     {
         case VERTICAL:    return addr % 0x800;
         case HORIZONTAL:  return ((addr / 2) & 0x400) + (addr % 0x400);
+        case ONE_SCREEN_LO:
+        case ONE_SCREEN_HI:
+                          addr = (addr & 0x3ff) + ((mirroring == ONE_SCREEN_HI) ? 0x400 : 0x0);
         default:          return addr - 0x2000;
     }
 }

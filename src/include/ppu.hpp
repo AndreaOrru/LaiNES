@@ -5,7 +5,7 @@ namespace PPU {
 
 
 enum Scanline  { VISIBLE, POST, NMI, PRE };
-enum Mirroring { VERTICAL, HORIZONTAL };
+enum Mirroring { VERTICAL, HORIZONTAL, ONE_SCREEN_HI, ONE_SCREEN_LO, FOUR_SCREEN };
 
 /* Sprite buffer */
 struct Sprite
