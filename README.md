@@ -119,16 +119,12 @@ void exec()
 
 ## Known issues
 * Some people are having problems with the audio emulation on Linux.
-I couldn't reproduce it, but pull requests to fix it are more than welcome.
-
-* Contra and Castlevania have some graphical issues. Working on that.
 
 ## Contributors
 * [Jeff Katz](https://github.com/kraln) - Mapper 002 & 003.
 
-
-## External documentation
+## References and credits
+- Special thanks to [Ulf Magnusson](https://github.com/ulfalizer) for the invaluable [PPU diagram] (http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png) and for his [excellent implementation](https://github.com/ulfalizer/nesalizer) which was a big source of inspiration.
+- blargg's APU sound chip emulator: http://blargg.8bitalley.com/libs/audio.html#Nes_Snd_Emu
 - Complete hardware reference: http://problemkaputt.de/everynes.htm
 - Tick-by-tick breakdown of 6502 instructions: http://nesdev.com/6502_cpu.txt
-- Diagram of the PPU state machine: http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png
-- blargg's APU sound chip emulator: http://blargg.8bitalley.com/libs/audio.html#Nes_Snd_Emu
