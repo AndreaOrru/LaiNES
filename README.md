@@ -116,8 +116,13 @@ void exec()
 ```
 
 ## Known issues
-Some people are having problems with the audio emulation on Linux.
+* Some people are having problems with the audio emulation on Linux.
 I couldn't reproduce it, but pull requests to fix it are more than welcome.
+
+* Contra and Castlevania have some graphical issues. Working on that.
+
+## Contributors
+* @kraln (Jeff Katz) - Mapper 002 & 003.
 
 ## External documentation
 - Complete hardware reference: http://problemkaputt.de/everynes.htm
