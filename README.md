@@ -64,9 +64,11 @@ The size of the window and the controls are customizable. LaiNES supports multip
 
 ## Compatibility
 LaiNES implements the most common mappers, which should be enough for a good percentage of the games:
-- NROM
-- MMC1 (SxROM)
-- MMC3, MMC6 (TxROM)
+- NROM (Mapper 000)
+- MMC1 / SxROM (Mapper 001)
+- UxROM (Mapper 002)
+- CNROM (Mapper 003)
+- MMC3, MMC6 / TxROM (Mapper 004)
 
 You can check the compatibility for each ROM in the following list:
 http://tuxnes.sourceforge.net/nesmapper.txt
