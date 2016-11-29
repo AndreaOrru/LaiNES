@@ -13,7 +13,7 @@ class Mapper3 : public Mapper
     Mapper3(u8* rom) : Mapper(rom)
     {
         PRG_size_16k = rom[4] == 1;
-        vertical_mirroring = rom[7] & 0x01;
+        vertical_mirroring = rom[6] & 0x01;
         regs[0] = 0;
         apply();
     }
