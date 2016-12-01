@@ -12,10 +12,9 @@ Compact, cycle-accurate NES emulator in ~1000 lines of C++.
 ![The Legend of Zelda](http://i.imgur.com/OLO02ij.png)
 
 ## How are lines counted?
-There have been some discussions about how the number of lines has been calculated. The claim of ~1k lines doesn't include the libraries in the boost and nes_apu folders. Future plans include eliminating these dependencies to make the code base even slimmer.
+There have been some discussions about how the number of lines has been calculated. The claim of ~1k lines doesn't include the libraries (boost and nes_apu). Future plans include eliminating those dependencies to make the code base even slimmer.
 
 ```
-[andrea@manhattan src]$ rm -rf boost nes_apu Sound_Queue.*
 [andrea@manhattan src]$ cloc .
       24 text files.
       24 unique files.                              
