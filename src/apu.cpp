@@ -13,7 +13,7 @@ blip_sample_t outBuf[OUT_SIZE];
 
 void init()
 {
-    buf.sample_rate(44100);
+    buf.sample_rate(96000);
     buf.clock_rate(1789773);
 
     apu.output(&buf);
