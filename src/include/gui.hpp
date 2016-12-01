@@ -1,7 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <string>
-#include "nes_apu/Nes_Apu.h"
+#include <Nes_Apu.h>
 #include "common.hpp"
 
 namespace GUI {

@@ -3,13 +3,13 @@ LaiNES
 
 Compact, cycle-accurate NES emulator in ~1000 lines of C++.
 
-![File Browser](./img/files.png)
-![Super Mario Bros. 3](./img/super_mario_3.png)
-![Kirby's Adventure](./img/kirby.png)
+![File Browser](http://i.imgur.com/2tuDlCw.png)
+![Super Mario Bros. 3](http://i.imgur.com/Gm4QWsE.png)
+![Kirby's Adventure](http://i.imgur.com/xA2vwim.png)
 
-![Controller Settings](./img/ff_settings.png)
-![Super Mario Bros.](./img/super_mario.png)
-![The Legend of Zelda](./img/zelda.png)
+![Star Wars](http://i.imgur.com/j3MmRba.png)
+![Super Mario Bros.](http://i.imgur.com/yal0ps1.png)
+![The Legend of Zelda](http://i.imgur.com/OLO02ij.png)
 
 ## How are lines counted?
 There have been some discussions about how the number of lines has been calculated. The claim of ~1k lines doesn't include the libraries in the boost and nes_apu folders. Future plans include eliminating these dependencies to make the code base even slimmer.
@@ -60,7 +60,7 @@ The emulator comes bundled with a simple GUI to navigate the filesystem and set 
 
 The size of the window and the controls are customizable. LaiNES supports multiple controllers and should work with joysticks as well. The default controls for the first player are as follows:
 
-![Controls](./img/controls.png)
+![Controller Settings](http://i.imgur.com/ERQ2nmJ.png)
 
 ## Compatibility
 LaiNES implements the most common mappers, which should be enough for a good percentage of the games:

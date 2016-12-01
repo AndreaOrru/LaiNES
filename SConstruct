@@ -1,13 +1,15 @@
 from os import environ
 
-flags = ['-O3', '-march=native', '-std=c++11']
+VariantDir('build/src', 'src', duplicate=0)
+VariantDir('build/lib', 'lib', duplicate=0)
+flags = ['-O3', '-flto', '-march=native', '-std=c++14']
 
 env = Environment(ENV       = environ,
                   CXX       = 'clang++',
-                  CPPPATH   = 'src',
                   CPPFLAGS  = ['-Wno-unused-value'],
                   CXXFLAGS  = flags,
                   LINKFLAGS = flags,
+                  CPPPATH   = ['#lib/include', '#src/include'],
                   LIBS      = ['SDL2', 'SDL2_image', 'SDL2_ttf'])
 
-env.Program('laines', Glob('src/*.cpp') + Glob('src/*/*.cpp'))
+env.Program('laines', Glob('build/*/*.cpp') + Glob('build/*/*/*.cpp'))
