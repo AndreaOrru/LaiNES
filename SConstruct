@@ -9,7 +9,7 @@ env = Environment(ENV       = environ,
                   CPPFLAGS  = ['-Wno-unused-value'],
                   CXXFLAGS  = flags,
                   LINKFLAGS = flags,
-                  CPPPATH   = ['#lib/include', '#src/include'],
+                  CPPPATH   = ['#simpleini', '#lib/include', '#src/include'],
                   LIBS      = ['SDL2', 'SDL2_image', 'SDL2_ttf'])
 
 env.Program('laines', Glob('build/*/*.cpp') + Glob('build/*/*/*.cpp'))
