@@ -7,9 +7,9 @@
 #include "cpu.hpp"
 #include "menu.hpp"
 #include "gui.hpp"
+#include "config.hpp"
 
 namespace GUI {
-
 
 // Screen size:
 const unsigned WIDTH  = 256;
@@ -36,28 +36,10 @@ FileMenu* fileMenu;
 
 bool pause = true;
 
-// Controls settings:
-SDL_Scancode KEY_A     [] = { SDL_SCANCODE_A,      SDL_SCANCODE_ESCAPE };
-SDL_Scancode KEY_B     [] = { SDL_SCANCODE_S,      SDL_SCANCODE_ESCAPE };
-SDL_Scancode KEY_SELECT[] = { SDL_SCANCODE_SPACE,  SDL_SCANCODE_ESCAPE };
-SDL_Scancode KEY_START [] = { SDL_SCANCODE_RETURN, SDL_SCANCODE_ESCAPE };
-SDL_Scancode KEY_UP    [] = { SDL_SCANCODE_UP,     SDL_SCANCODE_ESCAPE };
-SDL_Scancode KEY_DOWN  [] = { SDL_SCANCODE_DOWN,   SDL_SCANCODE_ESCAPE };
-SDL_Scancode KEY_LEFT  [] = { SDL_SCANCODE_LEFT,   SDL_SCANCODE_ESCAPE };
-SDL_Scancode KEY_RIGHT [] = { SDL_SCANCODE_RIGHT,  SDL_SCANCODE_ESCAPE };
-int BTN_UP    [] = { -1, -1 };
-int BTN_DOWN  [] = { -1, -1 };
-int BTN_LEFT  [] = { -1, -1 };
-int BTN_RIGHT [] = { -1, -1 };
-int BTN_A     [] = { -1, -1 };
-int BTN_B     [] = { -1, -1 };
-int BTN_SELECT[] = { -1, -1 };
-int BTN_START [] = { -1, -1 };
-bool useJoystick[] = { false, false };
-
 /* Set the window size multiplier */
 void set_size(int mul)
 {
+    last_window_size = mul;
     SDL_SetWindowSize(window, WIDTH * mul, HEIGHT * mul);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
@@ -80,7 +62,7 @@ void init()
     // Initialize graphics structures:
     window      = SDL_CreateWindow  ("LaiNES",
                                      SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                     WIDTH, HEIGHT, 0);
+                                     WIDTH * last_window_size, HEIGHT * last_window_size, 0);
 
     renderer    = SDL_CreateRenderer(window, -1,
                                      SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -110,12 +92,14 @@ void init()
     settingsMenu->add(new Entry("Video",        []{ menu = videoMenu; }));
     settingsMenu->add(new Entry("Controller 1", []{ menu = useJoystick[0] ? joystickMenu[0] : keyboardMenu[0]; }));
     settingsMenu->add(new Entry("Controller 2", []{ menu = useJoystick[1] ? joystickMenu[1] : keyboardMenu[1]; }));
+    settingsMenu->add(new Entry("Save Settings", []{ save_settings(); menu = mainMenu; }));
 
     videoMenu = new Menu;
     videoMenu->add(new Entry("<",       []{ menu = settingsMenu; }));
     videoMenu->add(new Entry("Size 1x", []{ set_size(1); }));
     videoMenu->add(new Entry("Size 2x", []{ set_size(2); }));
     videoMenu->add(new Entry("Size 3x", []{ set_size(3); }));
+    videoMenu->add(new Entry("Size 4x", []{ set_size(4); }));
 
     for (int i = 0; i < 2; i++)
     {

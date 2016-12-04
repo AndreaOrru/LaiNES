@@ -49,7 +49,7 @@ brew install scons sdl2 sdl2_image sdl2_ttf
 
 Compile and run:
 ```sh
-git clone https://github.com/AndreaOrru/LaiNES && cd LaiNES
+git clone --recursive https://github.com/AndreaOrru/LaiNES && cd LaiNES
 scons
 ./laines
 ```
@@ -120,7 +120,7 @@ void exec()
 * Some people are having problems with the audio emulation on Linux.
 
 ## Contributors
-* [Jeff Katz](https://github.com/kraln) - Mapper 002 & 003.
+* [Jeff Katz](https://github.com/kraln) - Mapper 002 & 003, configuration.
 
 ## References and credits
 - Special thanks to [Ulf Magnusson](https://github.com/ulfalizer) for the invaluable [PPU diagram] (http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png) and for his [excellent implementation](https://github.com/ulfalizer/nesalizer) which was a big source of inspiration.
