@@ -10,18 +10,19 @@ void Mapper7::apply()
     * 32 kb PRG ROM Banks
     * 0x8000 - 0xFFFF swappable
     */
-    map_prg<32>(0, regs[0] & 0x7);
+    map_prg<32>(0, regs[0] & 0b00001111);
 
     /* 8k of CHR (ram) */
     map_chr<8>(0, 0);
 
     /* Mirroring based on bit 5 */
-    set_mirroring((regs[0] & 0x10) ? PPU::ONE_SCREEN_HI : PPU::ONE_SCREEN_LO);
+    set_mirroring((regs[0] & 0b00010000) ? PPU::ONE_SCREEN_HI : PPU::ONE_SCREEN_LO);
 }
 
 u8 Mapper7::write(u16 addr, u8 v)
 {
-    /* check for bus contingency? (addr & 0x8000 == v?) nah */
+    /* check for bus contingency? (addr & 0x8000 == v?)
+     * Seems not neccesary */
 
     /* bank switching */
     if (addr & 0x8000)
