@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include "apu.hpp"
 #include "cartridge.hpp"
 #include "joypad.hpp"
@@ -229,7 +230,12 @@ void exec()
         case 0xF1: return SBC<izy>()  ;  case 0xF5: return SBC<zpx>()  ;
         case 0xF6: return INC<zpx>()  ;  case 0xF8: return flag<D,1>() ;
         case 0xF9: return SBC<aby>()  ;  case 0xFD: return SBC<abx>()  ;
-        case 0xFE: return INC<_abx>() ;  default:   return exit(1)     ;
+        case 0xFE: return INC<_abx>() ;
+        default:
+        {
+          std::cout << "Invalid OPcode! PC: " << PC << " OPcode: 0x" << std::hex << (int)rd(PC-1) << "\n";
+          return NOP();
+        }
     }
 }
 
