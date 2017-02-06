@@ -117,7 +117,7 @@ void exec()
 ```
 
 ## Known issues
-* Some people are having problems with the audio emulation on Linux.
+* The quality of the audio emulation on Linux is very poor. Typing `export SDL_AUDIODRIVER=ALSA` before running the emulator has been reported to improve it.
 
 ## Contributors
 * [Jeff Katz](https://github.com/kraln) - Mapper 002 & 003, configuration.
