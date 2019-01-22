@@ -10,8 +10,6 @@ namespace GUI {
 
 class Entry
 {
-    int x, y;
-
     std::string label;
     std::function<void()> callback;
 
@@ -20,19 +18,16 @@ class Entry
     SDL_Texture* redTexture   = nullptr;
 
   public:
-    Entry(std::string label, std::function<void()> callback = []{}, int x = TEXT_CENTER, int y = 0);
+    Entry(std::string label, std::function<void()> callback = []{});
     ~Entry();
 
-    virtual void setX(int x) { this->x = x; }
-    virtual void setY(int y) { this->y = y; }
-    int getX() { return x; }
-    int getY() { return y; }
     void setLabel(std::string label);
+    inline std::string& getLabel() { return label; }
 
     virtual void select()   { selected = true;  };
     virtual void unselect() { selected = false; };
     void trigger() { callback(); };
-    virtual void render();
+    virtual void render(int x, int y);
 };
 
 class ControlEntry : public Entry
@@ -42,20 +37,23 @@ class ControlEntry : public Entry
     Entry* keyEntry;
 
   public:
-    ControlEntry(std::string action, SDL_Scancode* key, int x = 0, int y = 0);
-    ControlEntry(std::string action, int* button, int x = 0, int y = 0);
-    void setY(int y) { Entry::setY(y);    keyEntry->setY(y);    }
+    ControlEntry(std::string action, SDL_Scancode* key);
+    ControlEntry(std::string action, int* button);
     void select()    { Entry::select();   keyEntry->select();   }
     void unselect()  { Entry::unselect(); keyEntry->unselect(); }
-    void render()    { Entry::render();   keyEntry->render();   }
+    void render(int x, int y)    { Entry::render(x, y);   keyEntry->render(TEXT_RIGHT, y);   }
 };
 
 class Menu
 {
-    std::vector<Entry*> entries;
+    const int MAX_ENTRY = GUI::HEIGHT / FONT_SZ - 1;
     int cursor = 0;
+    int top = 0;
+    int bottom = MAX_ENTRY;
 
   public:
+    std::vector<Entry*> entries;
+
     void add(Entry* entry);
     void clear();
     void update(u8 const* keys);

@@ -122,7 +122,13 @@ void PLA() { T; T; A = pop(); upd_nz(A);  }
 void PHA() { T; push(A); }
 
 /* Flow control (branches, jumps) */
-template<Flag f, bool v> void br() { s8 j = rd(imm()); if (P[f] == v) { T; PC += j; } }
+template<Flag f, bool v> void br() { 
+    s8 j = rd(imm()); 
+    if (P[f] == v) { 
+        if (cross(PC, j)) T; 
+        T; PC += j; 
+    } 
+}
 void JMP_IND() { u16 i = rd16(imm16()); PC = rd16_d(i, (i&0xFF00) | ((i+1) % 0x100)); }
 void JMP()     { PC = rd16(imm16()); }
 void JSR()     { u16 t = PC+1; T; push(t >> 8); push(t); PC = rd16(imm16()); }

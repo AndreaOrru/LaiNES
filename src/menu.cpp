@@ -8,7 +8,7 @@ namespace GUI {
 using namespace std;
 
 
-Entry::Entry(string label, function<void()> callback, int x, int y) : callback(callback), x(x), y(y)
+Entry::Entry(string label, function<void()> callback) : callback(callback)
 {
     setLabel(label);
 }
@@ -30,30 +30,24 @@ void Entry::setLabel(string label)
     redTexture   = gen_text(label, { 255,   0,   0 });
 }
 
-void Entry::render()
-{
-    render_texture(selected ? redTexture : whiteTexture, getX(), getY());
+void Entry::render(int x, int y) {
+    render_texture(selected ? redTexture : whiteTexture, x, y);
 }
 
-
-ControlEntry::ControlEntry(string action, SDL_Scancode* key, int x, int y) : key(key),
+ControlEntry::ControlEntry(string action, SDL_Scancode* key) : key(key),
     Entry::Entry(
         action,
-        [&]{ keyEntry->setLabel(SDL_GetScancodeName(*(this->key) = query_key())); },
-        x,
-        y)
+        [&]{ keyEntry->setLabel(SDL_GetScancodeName(*(this->key) = query_key())); })
 {
-    this->keyEntry = new Entry(SDL_GetScancodeName(*key), []{}, TEXT_RIGHT, y);
+    this->keyEntry = new Entry(SDL_GetScancodeName(*key), []{});
 }
 
-ControlEntry::ControlEntry(string action, int* button, int x, int y) : button(button),
+ControlEntry::ControlEntry(string action, int* button) : button(button),
     Entry::Entry(
         action,
-        [&]{ keyEntry->setLabel(to_string(*(this->button) = query_button())); },
-        x,
-        y)
+        [&]{ keyEntry->setLabel(to_string(*(this->button) = query_button())); })
 {
-    this->keyEntry = new Entry(to_string(*button), []{}, TEXT_RIGHT, y);
+    this->keyEntry = new Entry(to_string(*button), []{});
 }
 
 
@@ -61,7 +55,6 @@ void Menu::add(Entry* entry)
 {
     if (entries.empty())
         entry->select();
-    entry->setY(entries.size() * FONT_SZ);
     entries.push_back(entry);
 }
 
@@ -77,11 +70,20 @@ void Menu::update(u8 const* keys)
 {
     int oldCursor = cursor;
 
-    if (keys[SDL_SCANCODE_DOWN] and cursor < entries.size() - 1)
+    if (keys[SDL_SCANCODE_DOWN] and cursor < entries.size() - 1) {
         cursor++;
-    else if (keys[SDL_SCANCODE_UP] and cursor > 0)
+        if (cursor == bottom) {
+            bottom += 1;
+            top += 1;
+        }
+    }
+    else if (keys[SDL_SCANCODE_UP] and cursor > 0) {
         cursor--;
-
+        if (cursor < top) {
+            top -= 1;
+            bottom -= 1;
+        }
+    }
     entries[oldCursor]->unselect();
     entries[cursor]->select();
 
@@ -91,10 +93,11 @@ void Menu::update(u8 const* keys)
 
 void Menu::render()
 {
-    for (auto entry : entries)
-        entry->render();
+    for (int i = top; i < entries.size() && i < bottom; ++i) {
+        int y = (i - top) * FONT_SZ;
+        entries[i]->render(TEXT_CENTER, y);
+    }
 }
-
 
 void FileMenu::change_dir(string dir)
 {
@@ -113,14 +116,12 @@ void FileMenu::change_dir(string dir)
         if (dirp->d_type == DT_DIR)
         {
             add(new Entry(name + "/",
-                          [=]{ change_dir(path); },
-                          0));
+                          [=]{ change_dir(path); }));
         }
         else if (name.size() > 4 and name.substr(name.size() - 4) == ".nes")
         {
             add(new Entry(name,
-                          [=]{ Cartridge::load(path.c_str()); toggle_pause(); },
-                          0));
+                          [=]{ Cartridge::load(path.c_str()); toggle_pause(); }));
         }
     }
     closedir(dp);

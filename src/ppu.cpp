@@ -184,7 +184,7 @@ void eval_sprites()
             secOam[n].attr = oamMem[i*4 + 2];
             secOam[n].x    = oamMem[i*4 + 3];
 
-            if (++n > 8)
+            if (++n >= 8)
             {
                 status.sprOvf = true;
                 break;

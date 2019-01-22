@@ -11,10 +11,6 @@
 
 namespace GUI {
 
-// Screen size:
-const unsigned WIDTH  = 256;
-const unsigned HEIGHT = 240;
-
 // SDL structures:
 SDL_Window* window;
 SDL_Renderer* renderer;

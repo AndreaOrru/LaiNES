@@ -6,7 +6,9 @@
 
 namespace GUI {
 
-
+// Screen size:
+const unsigned WIDTH  = 256;
+const unsigned HEIGHT = 240;
 const int TEXT_CENTER  = -1;
 const int TEXT_RIGHT   = -2;
 const unsigned FONT_SZ = 15;
