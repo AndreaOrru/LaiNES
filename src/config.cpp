@@ -37,9 +37,7 @@ const char* get_config_path(char* buf, int buflen)
 {
     /* Bail on the complex stuff if we don't need it */
     if (!USE_CONFIG_DIR)
-    {
        return CONFIG_FALLBACK;
-    }
 
     /* First, get the home directory */
     char homepath[CONFIG_PATH_MAX];
@@ -102,7 +100,9 @@ void load_settings()
             BTN_B[p] = atoi(ini.GetValue(section, "B", "-1"));
             BTN_SELECT[p] = atoi(ini.GetValue(section, "SELECT", "-1"));
             BTN_START[p] = atoi(ini.GetValue(section, "START", "-1"));
-        } else {
+        }
+        else
+        {
             KEY_UP[p] = (SDL_Scancode)atoi(ini.GetValue(section, "UP", "82"));
             KEY_DOWN[p] = (SDL_Scancode)atoi(ini.GetValue(section, "DOWN", "81"));
             KEY_LEFT[p] = (SDL_Scancode)atoi(ini.GetValue(section, "LEFT", "80"));

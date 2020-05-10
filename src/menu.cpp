@@ -70,14 +70,16 @@ void Menu::update(u8 const* keys)
 {
     int oldCursor = cursor;
 
-    if (keys[SDL_SCANCODE_DOWN] and cursor < entries.size() - 1) {
+    if (keys[SDL_SCANCODE_DOWN] and cursor < entries.size() - 1)
+    {
         cursor++;
         if (cursor == bottom) {
             bottom += 1;
             top += 1;
         }
     }
-    else if (keys[SDL_SCANCODE_UP] and cursor > 0) {
+    else if (keys[SDL_SCANCODE_UP] and cursor > 0)
+    {
         cursor--;
         if (cursor < top) {
             top -= 1;
@@ -93,7 +95,8 @@ void Menu::update(u8 const* keys)
 
 void Menu::render()
 {
-    for (int i = top; i < entries.size() && i < bottom; ++i) {
+    for (int i = top; i < entries.size() && i < bottom; ++i)
+    {
         int y = (i - top) * FONT_SZ;
         entries[i]->render(TEXT_CENTER, y);
     }

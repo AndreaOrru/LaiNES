@@ -122,7 +122,8 @@ void PLA() { T; T; A = pop(); upd_nz(A);  }
 void PHA() { T; push(A); }
 
 /* Flow control (branches, jumps) */
-template<Flag f, bool v> void br() { 
+template<Flag f, bool v> void br()
+{ 
     s8 j = rd(imm()); 
     if (P[f] == v) { 
         if (cross(PC, j)) T; 
@@ -238,10 +239,8 @@ void exec()
         case 0xF9: return SBC<aby>()  ;  case 0xFD: return SBC<abx>()  ;
         case 0xFE: return INC<_abx>() ;
         default:
-        {
-          std::cout << "Invalid OPcode! PC: " << PC << " OPcode: 0x" << std::hex << (int)rd(PC-1) << "\n";
-          return NOP();
-        }
+            std::cout << "Invalid Opcode! PC: " << PC << " Opcode: 0x" << std::hex << (int)(rd(PC - 1)) << "\n";
+            return NOP();
     }
 }
 
