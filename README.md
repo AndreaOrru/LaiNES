@@ -124,7 +124,7 @@ void exec()
 * [PudgeMa](https://github.com/PudgeMa) - Scrollable menu and bug fixes.
 
 ## References and credits
-- Special thanks to [Ulf Magnusson](https://github.com/ulfalizer) for the invaluable [PPU diagram] (http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png) and for his [excellent implementation](https://github.com/ulfalizer/nesalizer) which was a big source of inspiration.
+- Special thanks to [Ulf Magnusson](https://github.com/ulfalizer) for the invaluable [PPU diagram](http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png) and for his [excellent implementation](https://github.com/ulfalizer/nesalizer) which was a big source of inspiration.
 - blargg's APU sound chip emulator: http://blargg.8bitalley.com/libs/audio.html#Nes_Snd_Emu
 - Complete hardware reference: http://problemkaputt.de/everynes.htm
 - Tick-by-tick breakdown of 6502 instructions: http://nesdev.com/6502_cpu.txt
