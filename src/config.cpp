@@ -87,9 +87,9 @@ void load_settings()
     set_size(screen_size);
 
     /* Control settings */
-    for (int p = 0; p < 1; p++)
+    for (int p = 0; p <= 1; p++)
     {
-        const char* section = p==0?"controls p1":"controls p2";
+        const char* section = (p == 0) ?"controls p1":"controls p2";
 
         useJoystick[p] = (ini.GetValue(section, "usejoy", "no"))[0] == 'y';
         if (useJoystick[p])
@@ -120,32 +120,32 @@ void load_settings()
 void save_settings()
 {
     /* Screen settings */
-    char buf[2] = {0};
+    char buf[10];
     sprintf(buf, "%d", last_window_size);
     ini.SetValue("screen", "size", buf);
 
     /* Control settings */
-    for (int p = 0; p < 1; p++)
+    for (int p = 0; p <= 1; p++)
     {
-        const char* section = p==0?"controls p1":"controls p2";
+        const char* section = (p == 0) ? "controls p1" : "controls p2";
 
-        sprintf(buf, "%d", useJoystick[p]?BTN_UP[p]:KEY_UP[p]);
-        ini.SetValue("section", "UP", buf);
-        sprintf(buf, "%d", useJoystick[p]?BTN_DOWN[p]:KEY_DOWN[p]);
-        ini.SetValue("section", "DOWN", buf);
-        sprintf(buf, "%d", useJoystick[p]?BTN_LEFT[p]:KEY_LEFT[p]);
-        ini.SetValue("section", "LEFT", buf);
-        sprintf(buf, "%d", useJoystick[p]?BTN_RIGHT[p]:KEY_RIGHT[p]);
-        ini.SetValue("section", "RIGHT", buf);
-        sprintf(buf, "%d", useJoystick[p]?BTN_A[p]:KEY_A[p]);
-        ini.SetValue("section", "A", buf);
-        sprintf(buf, "%d", useJoystick[p]?BTN_B[p]:KEY_B[p]);
-        ini.SetValue("section", "B", buf);
-        sprintf(buf, "%d", useJoystick[p]?BTN_SELECT[p]:KEY_SELECT[p]);
-        ini.SetValue("section", "SELECT", buf);
-        sprintf(buf, "%d", useJoystick[p]?BTN_START[p]:KEY_START[p]);
-        ini.SetValue("section", "START", buf);
-        ini.SetValue("section", "usejoy", useJoystick[p]?"yes":"no");
+        sprintf(buf, "%d", useJoystick[p] ? BTN_UP[p]:KEY_UP[p]);
+        ini.SetValue(section, "UP", buf);
+        sprintf(buf, "%d", useJoystick[p] ? BTN_DOWN[p]:KEY_DOWN[p]);
+        ini.SetValue(section, "DOWN", buf);
+        sprintf(buf, "%d", useJoystick[p] ? BTN_LEFT[p]:KEY_LEFT[p]);
+        ini.SetValue(section, "LEFT", buf);
+        sprintf(buf, "%d", useJoystick[p] ? BTN_RIGHT[p]:KEY_RIGHT[p]);
+        ini.SetValue(section, "RIGHT", buf);
+        sprintf(buf, "%d", useJoystick[p] ? BTN_A[p]:KEY_A[p]);
+        ini.SetValue(section, "A", buf);
+        sprintf(buf, "%d", useJoystick[p] ? BTN_B[p]:KEY_B[p]);
+        ini.SetValue(section, "B", buf);
+        sprintf(buf, "%d", useJoystick[p] ? BTN_SELECT[p]:KEY_SELECT[p]);
+        ini.SetValue(section, "SELECT", buf);
+        sprintf(buf, "%d", useJoystick[p] ? BTN_START[p]:KEY_START[p]);
+        ini.SetValue(section, "START", buf);
+        ini.SetValue(section, "usejoy", useJoystick[p]? "yes":"no");
     }
    
     char path[CONFIG_PATH_MAX];
