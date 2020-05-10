@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <dirent.h>
 #include <unistd.h>
 #include "cartridge.hpp"
@@ -10,7 +11,7 @@ using namespace std;
 
 Entry::Entry(string label, function<void()> callback) : callback(callback)
 {
-    setLabel(label);
+    set_label(label);
 }
 
 Entry::~Entry()
@@ -19,7 +20,7 @@ Entry::~Entry()
     SDL_DestroyTexture(redTexture);
 }
 
-void Entry::setLabel(string label)
+void Entry::set_label(string label)
 {
     this->label = label;
 
@@ -37,7 +38,7 @@ void Entry::render(int x, int y) {
 ControlEntry::ControlEntry(string action, SDL_Scancode* key) : key(key),
     Entry::Entry(
         action,
-        [&]{ keyEntry->setLabel(SDL_GetScancodeName(*(this->key) = query_key())); })
+        [&]{ keyEntry->set_label(SDL_GetScancodeName(*(this->key) = query_key())); })
 {
     this->keyEntry = new Entry(SDL_GetScancodeName(*key), []{});
 }
@@ -45,7 +46,7 @@ ControlEntry::ControlEntry(string action, SDL_Scancode* key) : key(key),
 ControlEntry::ControlEntry(string action, int* button) : button(button),
     Entry::Entry(
         action,
-        [&]{ keyEntry->setLabel(to_string(*(this->button) = query_button())); })
+        [&]{ keyEntry->set_label(to_string(*(this->button) = query_button())); })
 {
     this->keyEntry = new Entry(to_string(*button), []{});
 }
@@ -64,6 +65,17 @@ void Menu::clear()
         delete entry;
     entries.clear();
     cursor = 0;
+}
+
+void Menu::sort_by_label()
+{
+    if (entries.empty())
+        return;
+    entries[0]->unselect();
+    sort(entries.begin(), entries.end(), [](Entry* a, Entry* b) {
+        return a->get_label() < b->get_label();
+    });
+    entries[0]->select();
 }
 
 void Menu::update(u8 const* keys)
@@ -117,17 +129,15 @@ void FileMenu::change_dir(string dir)
         if (name[0] == '.' and name != "..") continue;
 
         if (dirp->d_type == DT_DIR)
-        {
             add(new Entry(name + "/",
                           [=]{ change_dir(path); }));
-        }
+
         else if (name.size() > 4 and name.substr(name.size() - 4) == ".nes")
-        {
             add(new Entry(name,
                           [=]{ Cartridge::load(path.c_str()); toggle_pause(); }));
-        }
     }
     closedir(dp);
+    sort_by_label();
 }
 
 FileMenu::FileMenu()

@@ -21,8 +21,8 @@ class Entry
     Entry(std::string label, std::function<void()> callback = []{});
     ~Entry();
 
-    void setLabel(std::string label);
-    inline std::string& getLabel() { return label; }
+    void set_label(std::string label);
+    inline std::string& get_label() { return label; }
 
     virtual void select()   { selected = true;  };
     virtual void unselect() { selected = false; };
@@ -56,6 +56,7 @@ class Menu
 
     void add(Entry* entry);
     void clear();
+    void sort_by_label();
     void update(u8 const* keys);
     void render();
 };
