@@ -64,7 +64,14 @@ void Menu::clear()
     for (auto entry : entries)
         delete entry;
     entries.clear();
+    clear_error();
     cursor = 0;
+}
+
+void Menu::clear_error()
+{
+    delete errorMessage;
+    errorMessage = nullptr;
 }
 
 void Menu::sort_by_label()
@@ -89,6 +96,7 @@ void Menu::update(u8 const* keys)
             bottom += 1;
             top += 1;
         }
+        clear_error();
     }
     else if (keys[SDL_SCANCODE_UP] and cursor > 0)
     {
@@ -97,6 +105,7 @@ void Menu::update(u8 const* keys)
             top -= 1;
             bottom -= 1;
         }
+        clear_error();
     }
     entries[oldCursor]->unselect();
     entries[cursor]->select();
@@ -112,6 +121,9 @@ void Menu::render()
         int y = (i - top) * FONT_SZ;
         entries[i]->render(TEXT_CENTER, y);
     }
+
+    if (errorMessage != nullptr)
+        errorMessage->render(TEXT_CENTER, HEIGHT - FONT_SZ * 3 / 2);
 }
 
 void FileMenu::change_dir(string dir)
@@ -135,9 +147,11 @@ void FileMenu::change_dir(string dir)
         else if (name.size() > 4 and name.substr(name.size() - 4) == ".nes")
             add(new Entry(name,
                           [=]{
+                              clear_error();
                               Cartridge::load(path.c_str());
                               if (!Cartridge::loaded()) {
-                                  // TODO: Show error message on screen.
+                                  errorMessage = new Entry("Load failed");
+                                  errorMessage->select();
                                   return;
                               }
                               toggle_pause();
