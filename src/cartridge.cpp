@@ -49,7 +49,10 @@ void load(const char* fileName)
     fclose(f);
 
     int mapperNum = (rom[7] & 0xF0) | (rom[6] >> 4);
-    if (loaded()) delete mapper;
+    if (loaded()) {
+        delete mapper;
+        mapper = nullptr;
+    }
     switch (mapperNum)
     {
         case 0:  mapper = new Mapper0(rom); break;
@@ -57,6 +60,9 @@ void load(const char* fileName)
         case 2:  mapper = new Mapper2(rom); break;
         case 3:  mapper = new Mapper3(rom); break;
         case 4:  mapper = new Mapper4(rom); break;
+        default:
+            fprintf(stderr, "%s: mapper %d not supported\n", fileName, mapperNum);
+            return;
     }
 
     CPU::power();

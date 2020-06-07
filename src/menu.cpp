@@ -134,7 +134,14 @@ void FileMenu::change_dir(string dir)
 
         else if (name.size() > 4 and name.substr(name.size() - 4) == ".nes")
             add(new Entry(name,
-                          [=]{ Cartridge::load(path.c_str()); toggle_pause(); }));
+                          [=]{
+                              Cartridge::load(path.c_str());
+                              if (!Cartridge::loaded()) {
+                                  // TODO: Show error message on screen.
+                                  return;
+                              }
+                              toggle_pause();
+                          }));
     }
     closedir(dp);
     sort_by_label();
