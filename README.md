@@ -13,7 +13,7 @@ Compact, cycle-accurate NES emulator in ~1000 lines of C++ (well, originally).
 
 ## Requirements
 LaiNES should run on any Unix system that is compatible with the following tools.
-- SConstruct
+- SCons
 - C++11 compatible compiler (e.g. clang++)
 - SDL2 (including sdl2-ttf and sdl2-image)
 
