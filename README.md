@@ -20,6 +20,9 @@ LaiNES should run on any Unix system that is compatible with the following tools
 ## Building and running
 Install the dependencies:
 ```sh
+# Arch Linux:
+sudo pacman -S clang scons sdl2 sdl2_image sdl2_ttf
+
 # Debian-based systems:
 sudo apt-get install clang scons libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
 
