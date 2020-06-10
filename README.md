@@ -1,7 +1,7 @@
 LaiNES
 ======
 
-Compact, cycle-accurate NES emulator in ~1000 lines of C++.
+Compact, cycle-accurate NES emulator in ~1000 lines of C++ (well, originally).
 
 ![File Browser](http://i.imgur.com/2tuDlCw.png)
 ![Super Mario Bros. 3](http://i.imgur.com/Gm4QWsE.png)
