@@ -11,26 +11,6 @@ Compact, cycle-accurate NES emulator in ~1000 lines of C++.
 ![Super Mario Bros.](http://i.imgur.com/yal0ps1.png)
 ![The Legend of Zelda](http://i.imgur.com/OLO02ij.png)
 
-## How are lines counted?
-There have been some discussions about how the number of lines has been calculated. The claim of ~1k lines doesn't include the libraries (boost and nes_apu). Future plans include eliminating those dependencies to make the code base even slimmer.
-
-```
-[andrea@manhattan src]$ cloc .
-      24 text files.
-      24 unique files.                              
-       1 file ignored.
-
-github.com/AlDanial/cloc v 1.70  T=0.03 s (780.3 files/s, 63170.2 lines/s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-C++                             11            210            110           1163
-C/C++ Header                    12             87              7            285
--------------------------------------------------------------------------------
-SUM:                            23            297            117           1448
--------------------------------------------------------------------------------
-```
-
 ## Requirements
 LaiNES should run on any Unix system that is compatible with the following tools.
 - SConstruct
