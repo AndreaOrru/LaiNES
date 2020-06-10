@@ -58,7 +58,7 @@ http://tuxnes.sourceforge.net/nesmapper.txt
 ## Technical notes
 The 6502 CPU and the PPU are implemented in just 219 and 283 lines of code respectively.
 Meta-programming is used extensively to keep the codebase compact.
-Here is a good example of how this is achieved:
+Here is a good example of how that is achieved:
 ```c++
 /* Cycle emulation.
  *     For each CPU cycle, we call the PPU thrice, because it runs at 3 times the frequency. */
