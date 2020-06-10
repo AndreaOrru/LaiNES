@@ -146,25 +146,27 @@ void FileMenu::change_dir(string dir)
 
         else if (name.size() > 4 and name.substr(name.size() - 4) == ".nes")
             add(new Entry(name,
-                          [=]{
-                              clear_error();
-                              Cartridge::load(path.c_str());
-                              if (!Cartridge::loaded()) {
-                                  errorMessage = new Entry("Load failed");
-                                  errorMessage->select();
-                                  return;
-                              }
-                              toggle_pause();
-                          }));
+                          [=]{ load_rom(path); }));
     }
     closedir(dp);
     sort_by_label();
 }
 
+void FileMenu::load_rom(string path)
+{
+    clear_error();
+    Cartridge::load(path.c_str());
+    if (!Cartridge::loaded())
+    {
+        errorMessage = new Entry("Load failed");
+        return errorMessage->select();
+    }
+    toggle_pause();
+}
+
 FileMenu::FileMenu()
 {
     char cwd[512];
-
     change_dir(getcwd(cwd, 512));
 }
 

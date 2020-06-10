@@ -39,9 +39,9 @@ class ControlEntry : public Entry
   public:
     ControlEntry(std::string action, SDL_Scancode* key);
     ControlEntry(std::string action, int* button);
-    void select()    { Entry::select();   keyEntry->select();   }
-    void unselect()  { Entry::unselect(); keyEntry->unselect(); }
-    void render(int x, int y)    { Entry::render(x, y);   keyEntry->render(TEXT_RIGHT, y);   }
+    void select()   { Entry::select();   keyEntry->select();   }
+    void unselect() { Entry::unselect(); keyEntry->unselect(); }
+    void render(int x, int y) { Entry::render(x, y); keyEntry->render(TEXT_RIGHT, y); }
 };
 
 class Menu
@@ -66,6 +66,7 @@ class Menu
 class FileMenu : public Menu
 {
     void change_dir(std::string dir);
+    void load_rom(std::string path);
 
   public:
     FileMenu();
