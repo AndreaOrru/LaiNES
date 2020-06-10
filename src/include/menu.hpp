@@ -46,16 +46,18 @@ class ControlEntry : public Entry
 
 class Menu
 {
-    const int MAX_ENTRY = GUI::HEIGHT / FONT_SZ - 1;
+    const int MAX_ENTRY = GUI::HEIGHT / FONT_SZ - 2;
     int cursor = 0;
     int top = 0;
     int bottom = MAX_ENTRY;
 
   public:
     std::vector<Entry*> entries;
+    Entry* errorMessage = nullptr;
 
     void add(Entry* entry);
     void clear();
+    void clear_error();
     void sort_by_label();
     void update(u8 const* keys);
     void render();
