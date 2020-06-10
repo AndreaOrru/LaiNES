@@ -122,6 +122,7 @@ void exec()
 ## Contributors
 * [Jeff Katz](https://github.com/kraln) - Mapper 002 & 003, configuration.
 * [PudgeMa](https://github.com/PudgeMa) - Scrollable menu and bug fixes.
+* [tyfkda](https://github.com/tyfkda) - Show error message instead of segfault for unsupported mappers.
 
 ## References and credits
 - Special thanks to [Ulf Magnusson](https://github.com/ulfalizer) for the invaluable [PPU diagram](http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png) and for his [excellent implementation](https://github.com/ulfalizer/nesalizer) which was a big source of inspiration.
