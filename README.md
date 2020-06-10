@@ -57,7 +57,7 @@ http://tuxnes.sourceforge.net/nesmapper.txt
 
 ## Technical notes
 The 6502 CPU and the PPU are implemented in just 219 and 283 lines of code respectively.
-Some clever meta-programming tricks are used to keep the codebase compact.
+Meta-programming is used extensively to keep the codebase compact.
 Here is a good example of how this is achieved:
 ```c++
 /* Cycle emulation.
@@ -100,7 +100,7 @@ void exec()
 ```
 
 ## Known issues
-* The quality of the audio emulation on Linux is very poor. Typing `export SDL_AUDIODRIVER=ALSA` before running the emulator has been reported to improve it.
+* If you're experiencing audio issues on Linux, try typing `export SDL_AUDIODRIVER=ALSA` before running the emulator.
 
 ## Contributors
 * [Jeff Katz](https://github.com/kraln) - Mapper 002 & 003, configuration.
