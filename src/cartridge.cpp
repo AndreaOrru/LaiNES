@@ -49,7 +49,8 @@ void load(const char* fileName)
     fclose(f);
 
     int mapperNum = (rom[7] & 0xF0) | (rom[6] >> 4);
-    if (loaded()) {
+    if (loaded())
+    {
         delete mapper;
         mapper = nullptr;
     }
