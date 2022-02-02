@@ -178,13 +178,16 @@ void eval_sprites()
         // If the sprite is in the scanline, copy its properties into secondary OAM:
         if (line >= 0 and line < spr_height())
         {
-            secOam[n].id   = i;
-            secOam[n].y    = oamMem[i*4 + 0];
-            secOam[n].tile = oamMem[i*4 + 1];
-            secOam[n].attr = oamMem[i*4 + 2];
-            secOam[n].x    = oamMem[i*4 + 3];
-
-            if (++n >= 8)
+            if (n < 8)
+            {
+                secOam[n].id   = i;
+                secOam[n].y    = oamMem[i * 4 + 0];
+                secOam[n].tile = oamMem[i * 4 + 1];
+                secOam[n].attr = oamMem[i * 4 + 2];
+                secOam[n].x    = oamMem[i * 4 + 3];
+                n++;
+            }
+            else
             {
                 status.sprOvf = true;
                 break;

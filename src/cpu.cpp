@@ -30,7 +30,7 @@ inline void tick() { PPU::step(); PPU::step(); PPU::step(); remainingCycles--; }
 inline void upd_cv(u8 x, u8 y, s16 r) { P[C] = (r>0xFF); P[V] = ~(x^y) & (x^r) & 0x80; }
 inline void upd_nz(u8 x)              { P[N] = x & 0x80; P[Z] = (x == 0);              }
 // Does adding I to A cross a page?
-inline bool cross(u16 a, u8 i) { return ((a+i) & 0xFF00) != ((a & 0xFF00)); }
+template<typename Offset> inline bool cross(u16 a, Offset i) { return ((a+i) & 0xFF00) != ((a & 0xFF00)); }
 
 /* Memory access */
 void dma_oam(u8 bank);
@@ -141,7 +141,7 @@ void RTI() { PLP(); PC =  pop() | (pop() << 8);         }
 template<Flag f, bool v> void flag() { P[f] = v; T; }  // Clear and set flags.
 template<IntType t> void INT()
 {
-    T; if (t != BRK) T;  // BRK already performed the fetch.
+    T; if (t != BRK) T; else PC++;  // BRK already performed the fetch.
     if (t != RESET)  // Writes on stack are inhibited on RESET.
     {
         push(PC >> 8); push(PC & 0xFF);
