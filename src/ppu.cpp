@@ -255,7 +255,15 @@ void pixel()
         // Evaluate priority:
         if (objPalette && (palette == 0 || objPriority == 0)) palette = objPalette;
 
-        pixels[scanline*256 + x] = nesRgb[rd(0x3F00 + (rendering() ? palette : 0))];
+        // Apply emphasis bits from mask register (bits 5-7)
+        u8 emphasis = (mask.red << 0) | (mask.green << 1) | (mask.blue << 2);
+        if (emphasis == 0) {
+            // No emphasis - use base palette directly for compatibility
+            pixels[scanline*256 + x] = basePalette[rd(0x3F00 + (rendering() ? palette : 0))];
+        } else {
+            // Use precomputed emphasis palette
+            pixels[scanline*256 + x] = nesRgb[emphasis][rd(0x3F00 + (rendering() ? palette : 0))];
+        }
     }
     // Perform background shifts:
     bgShiftL <<= 1; bgShiftH <<= 1;
@@ -347,6 +355,29 @@ void reset()
     memset(pixels, 0x00, sizeof(pixels));
     memset(ciRam,  0xFF, sizeof(ciRam));
     memset(oamMem, 0x00, sizeof(oamMem));
+
+    // Precompute all emphasis combinations
+    for (int emp = 0; emp < 8; emp++) {
+        for (int i = 0; i < 64; i++) {
+            u32 col = basePalette[i];
+            
+            if (emp == 0) {
+                // No emphasis - use original colors exactly
+                nesRgb[emp][i] = col;
+            } else {
+                // Apply emphasis: attenuate non-emphasized channels
+                u8 r = (col >> 16) & 0xFF;
+                u8 g = (col >> 8) & 0xFF;
+                u8 b = col & 0xFF;
+                
+                if (!(emp & 1)) r = r * 3 / 4;  // If red not emphasized, attenuate it
+                if (!(emp & 2)) g = g * 3 / 4;  // If green not emphasized, attenuate it  
+                if (!(emp & 4)) b = b * 3 / 4;  // If blue not emphasized, attenuate it
+                
+                nesRgb[emp][i] = (r << 16) | (g << 8) | b;
+            }
+        }
+    }
 }
 
 
