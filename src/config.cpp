@@ -23,14 +23,14 @@ SDL_Scancode KEY_UP    [] = { SDL_SCANCODE_UP,     SDL_SCANCODE_ESCAPE };
 SDL_Scancode KEY_DOWN  [] = { SDL_SCANCODE_DOWN,   SDL_SCANCODE_ESCAPE };
 SDL_Scancode KEY_LEFT  [] = { SDL_SCANCODE_LEFT,   SDL_SCANCODE_ESCAPE };
 SDL_Scancode KEY_RIGHT [] = { SDL_SCANCODE_RIGHT,  SDL_SCANCODE_ESCAPE };
-int BTN_UP    [] = { -1, -1 };
-int BTN_DOWN  [] = { -1, -1 };
-int BTN_LEFT  [] = { -1, -1 };
-int BTN_RIGHT [] = { -1, -1 };
-int BTN_A     [] = { -1, -1 };
-int BTN_B     [] = { -1, -1 };
-int BTN_SELECT[] = { -1, -1 };
-int BTN_START [] = { -1, -1 };
+int BTN_UP    [] = { SDL_CONTROLLER_BUTTON_DPAD_UP,    SDL_CONTROLLER_BUTTON_DPAD_UP };
+int BTN_DOWN  [] = { SDL_CONTROLLER_BUTTON_DPAD_DOWN,  SDL_CONTROLLER_BUTTON_DPAD_DOWN };
+int BTN_LEFT  [] = { SDL_CONTROLLER_BUTTON_DPAD_LEFT,  SDL_CONTROLLER_BUTTON_DPAD_LEFT };
+int BTN_RIGHT [] = { SDL_CONTROLLER_BUTTON_DPAD_RIGHT, SDL_CONTROLLER_BUTTON_DPAD_RIGHT };
+int BTN_A     [] = { SDL_CONTROLLER_BUTTON_A,          SDL_CONTROLLER_BUTTON_A };
+int BTN_B     [] = { SDL_CONTROLLER_BUTTON_B,          SDL_CONTROLLER_BUTTON_B };
+int BTN_SELECT[] = { SDL_CONTROLLER_BUTTON_BACK,       SDL_CONTROLLER_BUTTON_BACK };
+int BTN_START [] = { SDL_CONTROLLER_BUTTON_START,       SDL_CONTROLLER_BUTTON_START };
 bool useJoystick[] = { false, false };
 
 
@@ -98,14 +98,14 @@ void load_settings()
         useJoystick[p] = (ini.GetValue(section, "usejoy", "no"))[0] == 'y';
         if (useJoystick[p])
         {
-            BTN_UP[p] = atoi(ini.GetValue(section, "UP", "-1"));
-            BTN_DOWN[p] = atoi(ini.GetValue(section, "DOWN", "-1"));
-            BTN_LEFT[p] = atoi(ini.GetValue(section, "LEFT", "-1"));
-            BTN_RIGHT[p] = atoi(ini.GetValue(section, "RIGHT", "-1"));
-            BTN_A[p] = atoi(ini.GetValue(section, "A", "-1"));
-            BTN_B[p] = atoi(ini.GetValue(section, "B", "-1"));
-            BTN_SELECT[p] = atoi(ini.GetValue(section, "SELECT", "-1"));
-            BTN_START[p] = atoi(ini.GetValue(section, "START", "-1"));
+            BTN_UP[p] = atoi(ini.GetValue(section, "UP", "11"));
+            BTN_DOWN[p] = atoi(ini.GetValue(section, "DOWN", "12"));
+            BTN_LEFT[p] = atoi(ini.GetValue(section, "LEFT", "13"));
+            BTN_RIGHT[p] = atoi(ini.GetValue(section, "RIGHT", "14"));
+            BTN_A[p] = atoi(ini.GetValue(section, "A", "0"));
+            BTN_B[p] = atoi(ini.GetValue(section, "B", "1"));
+            BTN_SELECT[p] = atoi(ini.GetValue(section, "SELECT", "4"));
+            BTN_START[p] = atoi(ini.GetValue(section, "START", "6"));
         }
         else
         {
