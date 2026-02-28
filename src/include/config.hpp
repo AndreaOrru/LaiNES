@@ -1,12 +1,18 @@
 #pragma once
-#include <cerrno>
-#include <sys/stat.h>
 #include <SDL2/SDL.h>
 
-#define CONFIG_DIR_DEFAULT_MODE      S_IRWXU | S_IRGRP |  S_IXGRP | S_IROTH | S_IXOTH
 #define USE_CONFIG_DIR true
 #define CONFIG_DIR_NAME "LaiNES" 
 #define CONFIG_FALLBACK ".laines-settings"
+
+#ifdef _WIN32
+  // Windows mkdir doesn't use POSIX modes; keep signature compatibility.
+  #define CONFIG_DIR_DEFAULT_MODE 0
+#else
+  #include <sys/stat.h>
+  #define CONFIG_DIR_DEFAULT_MODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
+#endif
+
 /* PATH_MAX is a portability nightmare. */
 #define CONFIG_PATH_MAX 1024 
 
