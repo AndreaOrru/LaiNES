@@ -1,3 +1,4 @@
+#include <cerrno>
 #include <cstdlib>
 #include <SimpleIni.h>
 #include "config.hpp"
@@ -42,6 +43,9 @@ const char* get_config_path(char* buf, int buflen)
     if (!USE_CONFIG_DIR)
        return CONFIG_FALLBACK;
 
+#ifdef _WIN32
+    return CONFIG_FALLBACK;
+#else
     /* First, get the home directory */
     char homepath[CONFIG_PATH_MAX];
     char path[CONFIG_PATH_MAX];
@@ -70,6 +74,7 @@ const char* get_config_path(char* buf, int buflen)
     snprintf(buf, buflen, "%s/settings", path);
 
     return buf;
+#endif
 }
 
 
