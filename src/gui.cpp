@@ -20,7 +20,7 @@ SDL_Texture* background;
 TTF_Font* font;
 u8 const* keys;
 Sound_Queue* soundQueue;
-SDL_Joystick* joystick[] = { nullptr, nullptr };
+SDL_GameController* controller[] = { nullptr, nullptr };
 
 // Menus:
 Menu* menu;
@@ -83,8 +83,8 @@ void set_scaling_mode(bool smooth)
     recreate_menu(videoMenu);
     recreate_menu(keyboardMenu[0]);
     recreate_menu(keyboardMenu[1]);
-    if (joystick[0]) recreate_menu(joystickMenu[0]);
-    if (joystick[1]) recreate_menu(joystickMenu[1]);
+    if (controller[0]) recreate_menu(joystickMenu[0]);
+    if (controller[1]) recreate_menu(joystickMenu[1]);
     recreate_menu(fileMenu);
 }
 
@@ -112,7 +112,7 @@ void set_aspect_stretch(bool enabled)
 void init()
 {
     // Initialize graphics system:
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaling_mode ? "1" : "0");
 
     // Set window class for Wayland/X11 to match .desktop file
@@ -121,8 +121,9 @@ void init()
 
     TTF_Init();
 
-    for (int i = 0; i < SDL_NumJoysticks(); i++)
-        joystick[i] = SDL_JoystickOpen(i);
+    for (int i = 0, ci = 0; i < SDL_NumJoysticks() && ci < 2; i++)
+        if (SDL_IsGameController(i))
+            controller[ci++] = SDL_GameControllerOpen(i);
 
     APU::init();
     soundQueue = new Sound_Queue;
@@ -205,7 +206,7 @@ void init()
     {
         keyboardMenu[i] = new Menu;
         keyboardMenu[i]->add(new Entry("<", []{ menu = settingsMenu; }));
-        if (joystick[i] != nullptr)
+        if (controller[i] != nullptr)
             keyboardMenu[i]->add(new Entry("Joystick >", [=]{ menu = joystickMenu[i]; useJoystick[i] = true; }));
         keyboardMenu[i]->add(new ControlEntry("Up",     &KEY_UP[i]));
         keyboardMenu[i]->add(new ControlEntry("Down",   &KEY_DOWN[i]));
@@ -216,7 +217,7 @@ void init()
         keyboardMenu[i]->add(new ControlEntry("Start",  &KEY_START[i]));
         keyboardMenu[i]->add(new ControlEntry("Select", &KEY_SELECT[i]));
 
-        if (joystick[i] != nullptr)
+        if (controller[i] != nullptr)
         {
             joystickMenu[i] = new Menu;
             joystickMenu[i]->add(new Entry("<", []{ menu = settingsMenu; }));
@@ -273,21 +274,21 @@ u8 get_joypad_state(int n)
     u8 j = 0;
     
     // Get normal controller input first
-    if (useJoystick[n])
+    if (useJoystick[n] && controller[n])
     {
-        j |= (SDL_JoystickGetButton(joystick[n], BTN_A[n]))      << 0;  // A.
-        j |= (SDL_JoystickGetButton(joystick[n], BTN_B[n]))      << 1;  // B.
-        j |= (SDL_JoystickGetButton(joystick[n], BTN_SELECT[n])) << 2;  // Select.
-        j |= (SDL_JoystickGetButton(joystick[n], BTN_START[n]))  << 3;  // Start.
+        j |= (SDL_GameControllerGetButton(controller[n], (SDL_GameControllerButton)BTN_A[n]))      << 0;  // A.
+        j |= (SDL_GameControllerGetButton(controller[n], (SDL_GameControllerButton)BTN_B[n]))      << 1;  // B.
+        j |= (SDL_GameControllerGetButton(controller[n], (SDL_GameControllerButton)BTN_SELECT[n])) << 2;  // Select.
+        j |= (SDL_GameControllerGetButton(controller[n], (SDL_GameControllerButton)BTN_START[n]))  << 3;  // Start.
 
-        j |= (SDL_JoystickGetButton(joystick[n], BTN_UP[n]))     << 4;  // Up.
-        j |= (SDL_JoystickGetAxis(joystick[n], 1) < -DEAD_ZONE)  << 4;
-        j |= (SDL_JoystickGetButton(joystick[n], BTN_DOWN[n]))   << 5;  // Down.
-        j |= (SDL_JoystickGetAxis(joystick[n], 1) >  DEAD_ZONE)  << 5;
-        j |= (SDL_JoystickGetButton(joystick[n], BTN_LEFT[n]))   << 6;  // Left.
-        j |= (SDL_JoystickGetAxis(joystick[n], 0) < -DEAD_ZONE)  << 6;
-        j |= (SDL_JoystickGetButton(joystick[n], BTN_RIGHT[n]))  << 7;  // Right.
-        j |= (SDL_JoystickGetAxis(joystick[n], 0) >  DEAD_ZONE)  << 7;
+        j |= (SDL_GameControllerGetButton(controller[n], (SDL_GameControllerButton)BTN_UP[n]))     << 4;  // Up.
+        j |= (SDL_GameControllerGetAxis(controller[n], SDL_CONTROLLER_AXIS_LEFTY) < -DEAD_ZONE)    << 4;
+        j |= (SDL_GameControllerGetButton(controller[n], (SDL_GameControllerButton)BTN_DOWN[n]))   << 5;  // Down.
+        j |= (SDL_GameControllerGetAxis(controller[n], SDL_CONTROLLER_AXIS_LEFTY) >  DEAD_ZONE)    << 5;
+        j |= (SDL_GameControllerGetButton(controller[n], (SDL_GameControllerButton)BTN_LEFT[n]))   << 6;  // Left.
+        j |= (SDL_GameControllerGetAxis(controller[n], SDL_CONTROLLER_AXIS_LEFTX) < -DEAD_ZONE)    << 6;
+        j |= (SDL_GameControllerGetButton(controller[n], (SDL_GameControllerButton)BTN_RIGHT[n]))  << 7;  // Right.
+        j |= (SDL_GameControllerGetAxis(controller[n], SDL_CONTROLLER_AXIS_LEFTX) >  DEAD_ZONE)    << 7;
     }
     else
     {
@@ -418,8 +419,8 @@ int query_button()
     while (true)
     {
         SDL_PollEvent(&e);
-        if (e.type == SDL_JOYBUTTONDOWN)
-            return e.jbutton.button;
+        if (e.type == SDL_CONTROLLERBUTTONDOWN)
+            return e.cbutton.button;
     }
 }
 

@@ -55,7 +55,7 @@ The main menu includes a **Reset** option to reload and restart the current ROM 
 ### Savestate Support
 LaiNES includes savestate functionality accessible through the main menu (**Save State** and **Load State** options). Savestates preserve the complete emulator state including CPU, PPU, APU, mapper state, and expansion audio. Savestates are automatically stored per-ROM and can be loaded at any time.
 
-The size of the window and the controls are customizable. LaiNES supports multiple controllers and should work with joysticks as well. The default controls for the first player are as follows:
+The size of the window and the controls are customizable. LaiNES uses SDL2's GameController API, which provides out-of-the-box support for most modern controllers (Xbox, PlayStation, Switch, etc.) with correct button mapping and D-pad support. Up to two controllers are supported. The default controls for the first player are as follows:
 
 ![Controller Settings](http://i.imgur.com/ERQ2nmJ.png)
 

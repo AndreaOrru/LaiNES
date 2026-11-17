@@ -52,12 +52,17 @@ ControlEntry::ControlEntry(string action, SDL_Scancode* key) : key(key),
     this->keyEntry = new Entry(SDL_GetScancodeName(*key), []{});
 }
 
+static string btn_name(int b) {
+    const char* s = SDL_GameControllerGetStringForButton((SDL_GameControllerButton)b);
+    return s ? s : "?";
+}
+
 ControlEntry::ControlEntry(string action, int* button) : button(button),
     Entry::Entry(
         action,
-        [&]{ keyEntry->set_label(to_string(*(this->button) = query_button())); })
+        [&]{ keyEntry->set_label(btn_name(*(this->button) = query_button())); })
 {
-    this->keyEntry = new Entry(to_string(*button), []{});
+    this->keyEntry = new Entry(btn_name(*button), []{});
 }
 
 CycleEntry::CycleEntry(string prefix, int* value, int min_val, int max_val,
